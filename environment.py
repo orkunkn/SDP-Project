@@ -52,32 +52,42 @@ class Environment:
         
         self.ARL = self.total_nodes / self.total_levels if self.total_levels else 0
 
-    def draw_graph(self):
-        """ Draw the graph. """
+    
+    def draw_graph(self, info_text=""):
+        """ Draw the graph with additional information text. """
         pos = {node: (node, -level) for node, level in self.levels.items()}
-        plt.figure(figsize=(10, 6))
-        nx.draw_networkx_nodes(self.G, pos, node_size=700)
+        plt.figure(figsize=(10, 8))  # Adjusted figure size for extra text space
+        nx.draw_networkx_nodes(self.G, pos, node_size=500)
         nx.draw_networkx_edges(self.G, pos, edgelist=self.G.edges(), edge_color='black', arrows=True)
         nx.draw_networkx_labels(self.G, pos, font_size=20, font_family="sans-serif")
+
+        plt.text(0.005, 0.005, info_text, transform=plt.gca().transAxes, fontsize=13.5)  # Display the info text
+
         plt.title("Graph Representation with Levels")
         plt.axis("off")
+        plt.savefig("graph.png")
         plt.show()
 
 
 """ We may consider to use random generated lower triangular matrix """
 matrix = np.array([
-    [1, 0, 0, 0],
-    [1, 1, 0, 0],
-    [0, 1, 1, 0],
-    [1, 1, 0, 1]
+    [1, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+    [0, 1, 1, 0, 0],
+    [1, 1, 0, 1, 0],
+    [1, 1, 0, 1, 1]
 ])
 
 env = Environment(matrix)
-env.draw_graph()
 
-print(f"Total Nodes: {env.total_nodes}")
-print(f"Total Levels: {env.total_levels}")
-print("Indegree (Parent Numbers) of Each Node:", env.indegree_dict)
-print(f"Average Indegree per Row (AIR): {env.AIR:.2f}")
-print(f"Average Level Cost (ALC): {env.ALC:.2f}")
-print(f"Average Number of Rows per Level (ARL): {env.ARL:.2f}")
+info_text_ = (
+    f"Total Nodes: {env.total_nodes}\n"
+    f"Total Levels: {env.total_levels}\n"
+    f"Indegree of Each Node: {env.indegree_dict}\n"
+    f"Average Indegree per Row (AIR): {env.AIR:.2f}\n"
+    f"Average Level Cost (ALC): {env.ALC:.2f}\n"
+    f"Average Number of Rows per Level (ARL): {env.ARL:.2f}"
+)
+
+# Call the draw_graph method with the information text
+env.draw_graph(info_text=info_text_)
