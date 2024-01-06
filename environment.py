@@ -1,12 +1,14 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-
+#
 class Environment:
     
     def __init__(self, matrix):
+
         if not self.is_lower_triangular(matrix):
             raise ValueError("Matrix must be lower triangular")
+
         self.matrix = matrix
         self.G = nx.DiGraph()
         self.levels = {}
@@ -93,7 +95,7 @@ class Environment:
         current_alc = self.calculate_alc()
         original_level = self.levels[node]
         moved = False
-
+        move_counter=0
         while True:
             new_level = self.levels[node] - 1
             if new_level < 0:  # Node cannot go below level 0
@@ -115,6 +117,8 @@ class Environment:
             if new_alc <= current_alc:
                 current_alc = new_alc  # Update current ALC 
                 moved = True
+                move_counter+=1
+                print(move_counter)
             else:
                 # Revert the changes
                 self.levels[node] = new_level + 1
@@ -136,6 +140,21 @@ class Environment:
         alc_numerator = sum(2 * self.indegree_dict[node] - 1 for node in self.G.nodes())
         alc_denominator = max(self.levels.values()) + 1  
         return alc_numerator / alc_denominator if alc_denominator else 0
+
+
+    def nodes_vector(self,node):
+        """ Writes a vector for each moved node in a graph """
+        if not self.node.isnumeric():
+            raise ValueError(f"Cant Move {self.node} The given node is not integer")
+
+        if node > self.G.number_of_edges():
+            raise ValueError("out of node number")
+
+
+    def nodes_movement_watcher(self):
+        """ This watcher will paire the random generated graph with the moved nodes and nodes's vectors """
+        pass
+
 
     def generate_info_text(self):
         """ Generate information text about the graph metrics. """
