@@ -98,7 +98,7 @@ class Environment:
             new_level = self.levels[node] - 1
             if new_level < 0:  # Node cannot go below level 0
                 break
-
+            #
             # Temporarily move node to the new level
             self.levels[node] = new_level
 
