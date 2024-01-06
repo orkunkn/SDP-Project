@@ -68,7 +68,7 @@ class Environment:
 
         plt.title("Graph Representation with Levels")
         plt.axis("off")
-        plt.savefig("graph.png")
+        plt.savefig(f"{name}.png")
         plt.show()
 
     def optimize_graph_levels(self):
@@ -98,7 +98,7 @@ class Environment:
             new_level = self.levels[node] - 1
             if new_level < 0:  # Node cannot go below level 0
                 break
-            #
+            
             # Temporarily move node to the new level
             self.levels[node] = new_level
 
@@ -127,7 +127,7 @@ class Environment:
 
         if moved:
             print(new_alc)
-            self.draw_graph(info_text=self.generate_info_text())
+           
         else:
             print(f"Node {node} did not improve ALC. It remains at level {original_level}.")
 
@@ -164,13 +164,13 @@ matrix = np.array([
 
 
 env = Environment(matrix)
-env.draw_graph()
+env.draw_graph(name="init_graph")
 # For testing purposes, The node # given as parameter
 node_to_move = 3
 env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
 updated_info_text = env.generate_info_text()
-env.draw_graph(info_text=updated_info_text)
+env.draw_graph(info_text=updated_info_text,name="new_graph")
 
 
 
