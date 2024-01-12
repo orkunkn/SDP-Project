@@ -40,8 +40,9 @@ class Environment:
             if not node_has_edge and x != 0:  # Node 0 is kept as the root
                 self.G.remove_node(x)
 
-    def find_level_by_node(node):
-        """ Shows the node where it is located, at level """
+  
+
+    def is_level_empty(self,level):
         pass
 
     def calculate_graph_metrics(self):
@@ -65,6 +66,7 @@ class Environment:
         """ Draw the graph with additional information text. """
         info_text=self.generate_info_text()
         print(info_text)
+        print("levels draw", self.levels)
         pos = {node: (node, -level) for node, level in self.levels.items()}
         plt.figure(figsize=(10, 8)) 
         nx.draw_networkx_nodes(self.G, pos, node_size=500)
@@ -80,57 +82,66 @@ class Environment:
 
    
     def move_node_to_higher_level(self, node):
-        """ Move a node to a higher level if it reduces or maintains the ALC. 
-            If the node moves to a level of its parent, break the edge and reassign grandparents as new parents. """
-            
         if node not in self.G.nodes():
             print(f"Node {node} does not exist in the graph.")
             return
 
-        current_alc = self.calculate_alc()
-        print("current alc", current_alc)
         original_level = self.levels[node]
         moved = False
-        move_counter=0
-        while True:
-            new_level = self.levels[node] - 1
-            if new_level < 0:  # Node cannot go below level 0
-                break
-            
-            # Temporarily move node to the new level
-            self.levels[node] = new_level
+        current_alc = self.calculate_alc()
 
-            # Remove edges from parents that are now on the same level, and connect to grandparents
-            parents_at_new_level = [parent for parent in self.G.predecessors(node) if self.levels[parent] == new_level]
-            for parent in parents_at_new_level:
-                self.G.remove_edge(parent, node)
-                grandparents = list(self.G.predecessors(parent))
-                for grandparent in grandparents:
-                    self.G.add_edge(grandparent, node)
+        for new_level in range(original_level - 1, -1, -1):
+            self.move_node(node, new_level)
+            self.update_graph_after_movement(node, new_level)
 
-            # Check if ALC is maintained or improved
-            new_alc = self.calculate_alc()
-            if new_alc <= current_alc:
-                current_alc = new_alc  # Update current ALC 
+            if self.calculate_alc() <= current_alc:
+                current_alc = self.calculate_alc()
                 moved = True
-                move_counter+=1
-
-            
             else:
-                # Revert the changes
-                self.levels[node] = new_level + 1
-                for parent in parents_at_new_level:
-                    self.G.add_edge(parent, node)
-                    grandparents = list(self.G.predecessors(parent))
-                    for grandparent in grandparents:
-                        self.G.remove_edge(grandparent, node)
+                self.revert_changes(node, original_level)
                 break
 
         if moved:
-            print("---------------- moved ----------------")
-           
+            print("Node moved successfully.")
+            self.remove_empty_level(original_level)
         else:
             print(f"Node {node} did not improve ALC. It remains at level {original_level}.")
+
+    def move_node(self, node, new_level):
+        self.levels[node] = new_level
+
+    def update_graph_after_movement(self, node, new_level):
+        # Remove edges from parents that are now on the same level
+        for parent in list(self.G.predecessors(node)):
+            if self.levels[parent] == new_level:
+                self.G.remove_edge(parent, node)
+                # Add edges from grandparents, if any
+                for grandparent in self.G.predecessors(parent):
+                    self.G.add_edge(grandparent, node)
+    def remove_levels(self,level):
+  
+        keys_to_remove = [key for key, val in self.levels.items() if val == level]
+
+    
+        for key in keys_to_remove:
+            del self.levels[key]
+
+    def remove_empty_level(self,level):
+        """ Shows where the node is located at which level """
+
+        current_level=level
+        all_level = self.levels.values()
+        print(current_level)
+        self.remove_levels(current_level)
+        
+        if current_level not in all_level:
+            for node,level in self.levels.items():
+                if level > current_level:
+                    self.levels[node]-=1
+        else:
+            return False
+
+
 
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """
