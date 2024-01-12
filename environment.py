@@ -40,6 +40,10 @@ class Environment:
             if not node_has_edge and x != 0:  # Node 0 is kept as the root
                 self.G.remove_node(x)
 
+    def find_level_by_node(node):
+        """ Shows the node where it is located, at level """
+        pass
+
     def calculate_graph_metrics(self):
         """ Calculate and store graph metrics. """
         
@@ -60,30 +64,21 @@ class Environment:
     def draw_graph(self, info_text="",name=""):
         """ Draw the graph with additional information text. """
         info_text=self.generate_info_text()
+        print(info_text)
         pos = {node: (node, -level) for node, level in self.levels.items()}
         plt.figure(figsize=(10, 8)) 
         nx.draw_networkx_nodes(self.G, pos, node_size=500)
         nx.draw_networkx_edges(self.G, pos, edgelist=self.G.edges(), edge_color='black', arrows=True)
         nx.draw_networkx_labels(self.G, pos, font_size=20, font_family="sans-serif")
 
-        plt.text(0.005, 0.005, info_text, transform=plt.gca().transAxes, fontsize=13.5)  # Display the info text
+        plt.text(0.005, 0.005, info_text, transform=plt.gca().transAxes, fontsize=13.5) 
 
         plt.title("Graph Representation with Levels")
         plt.axis("off")
         plt.savefig(f"{name}.png")
         plt.show()
 
-    def optimize_graph_levels(self):
-        """ Optimizes graph levels for all nodes. """
-        nodes_moved = True
-        while nodes_moved:  # Keep trying to move nodes until no more moves are possible
-            nodes_moved = False
-            for node in list(self.G.nodes):  # Iterate over a static list of nodes
-                original_level = self.levels[node]
-                self.move_node_to_higher_level(node)
-                if self.levels[node] < original_level:
-                    nodes_moved = True
-
+   
     def move_node_to_higher_level(self, node):
         """ Move a node to a higher level if it reduces or maintains the ALC. 
             If the node moves to a level of its parent, break the edge and reassign grandparents as new parents. """
@@ -93,6 +88,7 @@ class Environment:
             return
 
         current_alc = self.calculate_alc()
+        print("current alc", current_alc)
         original_level = self.levels[node]
         moved = False
         move_counter=0
@@ -118,7 +114,8 @@ class Environment:
                 current_alc = new_alc  # Update current ALC 
                 moved = True
                 move_counter+=1
-                print(move_counter)
+
+            
             else:
                 # Revert the changes
                 self.levels[node] = new_level + 1
@@ -130,7 +127,7 @@ class Environment:
                 break
 
         if moved:
-            print(new_alc)
+            print("---------------- moved ----------------")
            
         else:
             print(f"Node {node} did not improve ALC. It remains at level {original_level}.")
@@ -184,8 +181,7 @@ matrix = np.array([
 
 env = Environment(matrix)
 env.draw_graph(name="init_graph")
-# For testing purposes, The node # given as parameter
-node_to_move = 3
+node_to_move=3
 env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
 updated_info_text = env.generate_info_text()
