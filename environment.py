@@ -1,7 +1,8 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-#
+from mtx_to_array import mtx_to_array
+
 class Environment:
     
     def __init__(self, matrix):
@@ -15,6 +16,7 @@ class Environment:
         self.convert_matrix_to_graph()
         self.calculate_graph_metrics()
 
+
     def is_lower_triangular(self, matrix):
         """ Check if a matrix is lower triangular. """
         if not isinstance(matrix, np.ndarray):
@@ -25,6 +27,7 @@ class Environment:
         
         return np.all(matrix == np.tril(matrix))
 
+
     def convert_matrix_to_graph(self):
         """ Convert the matrix to a graph and calculate levels. """
         """ Logical Equavilant of Lx=b """
@@ -33,17 +36,16 @@ class Environment:
             node_has_edge = False
             self.levels[x] = 0
             for j in range(x):
-                if self.matrix[x][j] == 1:
+                if self.matrix[x][j] != 0:
                     self.G.add_edge(j, x)
                     node_has_edge = True
                     self.levels[x] = max(self.levels[x], self.levels[j] + 1)
             if not node_has_edge and x != 0:  # Node 0 is kept as the root
                 self.G.remove_node(x)
 
-  
-
-    def is_level_empty(self,level):
+    def is_level_empty(self, level):
         pass
+
 
     def calculate_graph_metrics(self):
         """ Calculate and store graph metrics. """
@@ -62,7 +64,7 @@ class Environment:
         self.ARL = self.total_nodes / self.total_levels if self.total_levels else 0
 
     
-    def draw_graph(self, info_text="",name=""):
+    def draw_graph(self, info_text="", name=""):
         """ Draw the graph with additional information text. """
         info_text=self.generate_info_text()
         print(info_text)
@@ -107,8 +109,10 @@ class Environment:
         else:
             print(f"Node {node} did not improve ALC. It remains at level {original_level}.")
 
+
     def move_node(self, node, new_level):
         self.levels[node] = new_level
+
 
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
@@ -118,15 +122,16 @@ class Environment:
                 # Add edges from grandparents, if any
                 for grandparent in self.G.predecessors(parent):
                     self.G.add_edge(grandparent, node)
-    def remove_levels(self,level):
+
+
+    def remove_levels(self, level):
   
         keys_to_remove = [key for key, val in self.levels.items() if val == level]
-
-    
         for key in keys_to_remove:
             del self.levels[key]
 
-    def remove_empty_level(self,level):
+
+    def remove_empty_level(self, level):
         """ Shows where the node is located at which level """
 
         current_level=level
@@ -142,7 +147,6 @@ class Environment:
             return False
 
 
-
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """
         alc_numerator = sum(2 * self.indegree_dict[node] - 1 for node in self.G.nodes())
@@ -150,7 +154,7 @@ class Environment:
         return alc_numerator / alc_denominator if alc_denominator else 0
 
 
-    def nodes_vector(self,node):
+    def nodes_vector(self, node):
         """ Writes a vector for each moved node in a graph """
         if not self.node.isnumeric():
             raise ValueError(f"Cant Move {self.node} The given node is not integer")
@@ -176,7 +180,7 @@ class Environment:
         )
 
 
-""" will be our main source, sparse.tamu.edu """
+""" will be our main source, sparse.tamu.edu
 matrix = np.array([
     [1, 0, 0, 0, 0, 0, 0, 0],
     [1, 1, 0, 0, 0, 0, 0, 0],
@@ -188,8 +192,10 @@ matrix = np.array([
     [1, 0, 0, 1, 0, 0, 1, 1],
 
 ])
+"""
 
-
+matrix = mtx_to_array("bcsstm06.mtx")
+print(matrix)
 env = Environment(matrix)
 env.draw_graph(name="init_graph")
 node_to_move=3
@@ -197,6 +203,3 @@ env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
 updated_info_text = env.generate_info_text()
 env.draw_graph(info_text=updated_info_text,name="new_graph")
-
-
-
