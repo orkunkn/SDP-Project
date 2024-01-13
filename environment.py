@@ -1,7 +1,9 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-#
+import numpy as np
+import networkx as nx
+
 class Environment:
     
     def __init__(self, matrix):
@@ -39,11 +41,6 @@ class Environment:
                     self.levels[x] = max(self.levels[x], self.levels[j] + 1)
             if not node_has_edge and x != 0:  # Node 0 is kept as the root
                 self.G.remove_node(x)
-
-  
-
-    def is_level_empty(self,level):
-        pass
 
     def calculate_graph_metrics(self):
         """ Calculate and store graph metrics. """
@@ -118,6 +115,7 @@ class Environment:
                 # Add edges from grandparents, if any
                 for grandparent in self.G.predecessors(parent):
                     self.G.add_edge(grandparent, node)
+
     def remove_levels(self,level):
   
         keys_to_remove = [key for key, val in self.levels.items() if val == level]
@@ -141,7 +139,12 @@ class Environment:
         else:
             return False
 
+    def is_level_empty(self,level):
 
+        if level not in self.levels.values():
+            return True
+        else:
+            False
 
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """
@@ -176,6 +179,7 @@ class Environment:
         )
 
 
+
 """ will be our main source, sparse.tamu.edu """
 matrix = np.array([
     [1, 0, 0, 0, 0, 0, 0, 0],
@@ -188,6 +192,8 @@ matrix = np.array([
     [1, 0, 0, 1, 0, 0, 1, 1],
 
 ])
+
+
 
 
 env = Environment(matrix)
