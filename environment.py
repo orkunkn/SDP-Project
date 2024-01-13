@@ -43,8 +43,12 @@ class Environment:
             if not node_has_edge and x != 0:  # Node 0 is kept as the root
                 self.G.remove_node(x)
 
-    def is_level_empty(self, level):
-        pass
+    def is_level_empty(self,level):
+
+        if level not in self.levels.values():
+            return True
+        else:
+            False
 
 
     def calculate_graph_metrics(self):
@@ -105,7 +109,9 @@ class Environment:
 
         if moved:
             print("Node moved successfully.")
-            self.remove_empty_level(original_level)
+
+            if self.is_level_empty(original_level):
+                self.remove_empty_level(original_level)
         else:
             print(f"Node {node} did not improve ALC. It remains at level {original_level}.")
 
@@ -194,11 +200,10 @@ matrix = np.array([
 ])
 """
 
-matrix = mtx_to_array("bcsstm06.mtx")
-print(matrix)
+matrix = mtx_to_array("bcsstk10.mtx")
 env = Environment(matrix)
 env.draw_graph(name="init_graph")
-node_to_move=3
+node_to_move=25
 env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
 updated_info_text = env.generate_info_text()
