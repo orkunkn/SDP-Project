@@ -7,9 +7,6 @@ class Environment:
     
     def __init__(self, matrix):
 
-        if not self.is_lower_triangular(matrix):
-            raise ValueError("Matrix must be lower triangular")
-
         self.matrix = matrix
         self.G = nx.DiGraph()
         self.levels = {}
@@ -17,30 +14,21 @@ class Environment:
         self.calculate_graph_metrics()
 
 
-    def is_lower_triangular(self, matrix):
-        """ Check if a matrix is lower triangular. """
-        if not isinstance(matrix, np.ndarray):
-            raise ValueError("Matrix must be a numpy array")
-        
-        if matrix.shape[0] != matrix.shape[1]:
-            raise ValueError("Matrix must be square")
-        
-        return np.all(matrix == np.tril(matrix))
-
-
     def convert_matrix_to_graph(self):
-        """ Convert the matrix to a graph and calculate levels. """
-        """ Logical Equavilant of Lx=b """
+        rows, cols = self.matrix.nonzero()
+
         for x in range(self.matrix.shape[0]):
             self.G.add_node(x)
-            node_has_edge = False
             self.levels[x] = 0
-            for j in range(x):
-                if self.matrix[x][j] != 0:
-                    self.G.add_edge(j, x)
-                    node_has_edge = True
-                    self.levels[x] = max(self.levels[x], self.levels[j] + 1)
-            if not node_has_edge and x != 0:  # Node 0 is kept as the root
+
+        for row, col in zip(rows, cols):
+            if row > col:  # Ensuring lower triangular structure
+                self.G.add_edge(col, row)
+                self.levels[row] = max(self.levels[row], self.levels[col] + 1)
+
+        # Remove nodes without edges, except for node 0
+        for x in range(1, self.matrix.shape[0]):
+            if not self.G.out_degree(x) and not self.G.in_degree(x):
                 self.G.remove_node(x)
 
     def is_level_empty(self,level):
@@ -160,20 +148,6 @@ class Environment:
         return alc_numerator / alc_denominator if alc_denominator else 0
 
 
-    def nodes_vector(self, node):
-        """ Writes a vector for each moved node in a graph """
-        if not self.node.isnumeric():
-            raise ValueError(f"Cant Move {self.node} The given node is not integer")
-
-        if node > self.G.number_of_edges():
-            raise ValueError("out of node number")
-
-
-    def nodes_movement_watcher(self):
-        """ This watcher will paire the random generated graph with the moved nodes and nodes's vectors """
-        pass
-
-
     def generate_info_text(self):
         """ Generate information text about the graph metrics. """
         return (
@@ -186,24 +160,10 @@ class Environment:
         )
 
 
-""" will be our main source, sparse.tamu.edu
-matrix = np.array([
-    [1, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 1, 0, 1, 0, 0, 0, 0],
-    [0, 0, 1, 0, 1, 0, 0, 0],
-    [1, 0, 0, 1, 0, 1, 0, 0],
-    [0, 0, 1, 0, 0, 1, 1, 0],
-    [1, 0, 0, 1, 0, 0, 1, 1],
-
-])
-"""
-
-matrix = mtx_to_array("bcsstk10.mtx")
+matrix = mtx_to_array("new_matrix.mtx")
 env = Environment(matrix)
 env.draw_graph(name="init_graph")
-node_to_move=25
+node_to_move=3
 env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
 updated_info_text = env.generate_info_text()
