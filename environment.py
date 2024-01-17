@@ -45,7 +45,6 @@ class Environment:
         self.total_nodes = self.G.number_of_nodes()
         self.indegree_dict = {node: self.G.in_degree(node) for node in self.G.nodes()}
         self.total_levels = max(self.levels.values()) + 1
-        
      
         total_parents = sum(self.indegree_dict.values())
         self.AIR = total_parents / self.total_nodes if self.total_nodes else 0
@@ -54,13 +53,13 @@ class Environment:
         self.ALC = ALC_numerator / self.total_levels if self.total_levels else 0
         
         self.ARL = self.total_nodes / self.total_levels if self.total_levels else 0
+        info_text=self.generate_info_text()
+        print(info_text)
 
     
     def draw_graph(self, info_text="", name=""):
         """ Draw the graph with additional information text. """
-        info_text=self.generate_info_text()
-        print(info_text)
-        print("levels draw", self.levels)
+        # print("levels draw", self.levels)
         pos = {node: (node, -level) for node, level in self.levels.items()}
         plt.figure(figsize=(10, 8)) 
         nx.draw_networkx_nodes(self.G, pos, node_size=500)
@@ -119,7 +118,6 @@ class Environment:
 
 
     def remove_levels(self, level):
-  
         keys_to_remove = [key for key, val in self.levels.items() if val == level]
         for key in keys_to_remove:
             del self.levels[key]
@@ -153,18 +151,18 @@ class Environment:
         return (
             f"Total Nodes: {self.total_nodes}\n"
             f"Total Levels: {max(self.levels.values()) + 1}\n"
-            f"Indegree of Each Node: {self.indegree_dict}\n"
+            # f"Indegree of Each Node: {self.indegree_dict}\n"
             f"Average Indegree per Row (AIR): {self.AIR:.2f}\n"
             f"Average Level Cost (ALC): {self.calculate_alc():.2f}\n"
             f"Average Number of Rows per Level (ARL): {self.total_nodes / (max(self.levels.values()) + 1):.2f}"
         )
 
 
-matrix = mtx_to_array("new_matrix.mtx")
+matrix = mtx_to_array("basic_matrix.mtx")
 env = Environment(matrix)
-env.draw_graph(name="init_graph")
+# env.draw_graph(name="init_graph")
 node_to_move=3
 env.move_node_to_higher_level(node_to_move)
 env.calculate_graph_metrics()
-updated_info_text = env.generate_info_text()
-env.draw_graph(info_text=updated_info_text,name="new_graph")
+# updated_info_text = env.generate_info_text()
+# env.draw_graph(info_text=updated_info_text,name="new_graph")
