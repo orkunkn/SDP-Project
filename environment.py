@@ -54,6 +54,8 @@ class Environment:
                     self.node_parents[row].append(col)
                 else:
                     self.node_parents[row] = [col]
+            if row == col:
+                self.G.add_edge(col, row)
 
         # Remove nodes without edges, except for node 0
         for x in range(1, self.matrix.shape[0]):
@@ -75,6 +77,8 @@ class Environment:
         # Calculate level costs
         self.level_costs = {}
         for node, level in self.levels.items():
+            if level == 0:
+                continue
             indegree = self.indegree_dict[node]
             cost = max(0, 2 * indegree - 1)
 
