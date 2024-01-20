@@ -1,2 +1,4 @@
-venv./   
-classes_SDP_project.png 
+venv./
+sa.py
+*.mtx
+*.png
