@@ -1,24 +1,42 @@
-import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from mtx_to_array import mtx_to_array
 
 class Environment:
     
     def __init__(self, matrix):
         self.matrix = matrix
         self.G = nx.DiGraph()
+
+        # A dictionary mapping each node to its level.
         self.levels = {}
-        self.node_parents = {}  # Initialize node_parents here
-        self.init_levels={}
-        self.init_parents={}
+
+        # A dictionary mapping each node to its parent node.
+        self.node_parents = {}
+
+        # A dictionary to store initial levels of nodes, for reset purposes.
+        self.init_levels = {}
+
+        # A dictionary to store initial parent-child relationships, for reset purposes.
+        self.init_parents = {}
+
+        # A list to keep track of the current state of levels.
         self.state_levels = []
+
+        # A dictionary mapping possible changable levels, their nodes and their indegrees.
         self.state_level_vectors = {}
+
+        # A node counter for every level.
         self.nodes_per_level = {}
+
+        # A dictionary for cost of every level
         self.level_costs = {}
+
         self.convert_matrix_to_graph()
         self.calculate_graph_metrics()
         
-       
+        
+    """ Initial process, converts matrix to a graph """
     def convert_matrix_to_graph(self):
         rows, cols = self.matrix.nonzero()
 
@@ -37,25 +55,23 @@ class Environment:
                 else:
                     self.node_parents[row] = [col]
 
+        # Remove nodes without edges, except for node 0
         for x in range(1, self.matrix.shape[0]):
             if not self.G.out_degree(x) and not self.G.in_degree(x):
                 self.G.remove_node(x)
                 if x in self.node_parents:
                     del self.node_parents[x]
         
-        self.init_levels=self.levels.copy()
-        self.init_parents=self.node_parents.copy()
+        self.init_levels = self.levels.copy()
+        self.init_parents = self.node_parents.copy()
             
-        return self.init_levels,self.init_parents
+        return self.init_levels, self.init_parents
 
-  
+    """ Calculate and store graph metrics. """
     def calculate_graph_metrics(self):
-        """ Calculate and store graph metrics. """
         
         self.total_nodes = self.G.number_of_nodes()
         self.indegree_dict = {node: self.G.in_degree(node) for node in self.G.nodes()}
-        self.total_levels = max(self.levels.values()) + 1
-
         # Calculate level costs
         self.level_costs = {}
         for node, level in self.levels.items():
@@ -67,6 +83,7 @@ class Environment:
             else:
                 self.level_costs[level] = cost
 
+        # Count nodes in every level
         self.nodes_per_level = {}
         for node, level in self.levels.items():
             if level in self.nodes_per_level:
@@ -75,10 +92,14 @@ class Environment:
                 self.nodes_per_level[level] = 1
          
         total_parents = sum(self.indegree_dict.values())
+
+        # 3 criterias to control
+        # Average Indegree
         self.AIR = total_parents / self.total_nodes if self.total_nodes else 0
-        
-        ALC_numerator = sum(2 * indegree - 1 for indegree in self.indegree_dict.values())
-        self.ALC = ALC_numerator / self.total_levels if self.total_levels else 0
+        # Average Row per Level
+        self.ARL = self.total_nodes / (max(self.levels.values()) + 1) if self.levels else 0
+        # Average Level Cost
+        self.ALC = self.calculate_alc()
 
         # Check each node's calculated value against ALC and store their level and node with indegree
         for node in self.G.nodes():
@@ -89,16 +110,12 @@ class Environment:
                 if node_level not in self.state_level_vectors:
                     self.state_level_vectors[node_level] = {}
                 self.state_level_vectors[node_level][node] = self.indegree_dict[node]
-        
-        self.ARL = self.total_nodes / self.total_levels if self.total_levels else 0
 
-    
-    def draw_graph(self, info_text="",name="", moved=""):
 
-        if moved == "":
-            pos = {node: (node, -level) for node, level in self.init_levels.items()}
-        else:
-            pos = {node: (node, -level) for node, level in self.levels.items()}
+    """ Graph drawing function """
+    def draw_graph(self, info_text="",name=""):
+
+        pos = {node: (node, -level) for node, level in self.levels.items()}
         plt.figure(figsize=(10, 8)) 
         nx.draw_networkx_nodes(self.G, pos, node_size=500)
         nx.draw_networkx_edges(self.G, pos, edgelist=self.G.edges(), edge_color='black', arrows=True)
@@ -111,7 +128,7 @@ class Environment:
         plt.savefig(f"{name}")
         plt.show()
 
-   
+    """ Moves a node to the highest level """
     def move_node_to_higher_level(self, node):
         if node not in self.G.nodes():
             print(f"Node {node} does not exist in the graph.")
@@ -120,9 +137,9 @@ class Environment:
         original_level = self.levels[node]
         moved = False
         current_air = self.AIR
-        current_alc = self.calculate_alc()
+        current_alc = self.ALC
         current_arl = self.ARL
-        
+        print(self.generate_info_text())
     
         for new_level in range(original_level - 1, -1, -1):
             self.move_node(node, new_level)
@@ -132,33 +149,32 @@ class Environment:
             new_air = self.AIR
             new_alc = self.calculate_alc()
             new_arl = self.ARL
-        
-            if new_air > current_air and new_alc > current_alc and new_arl > current_arl:
+            # if condition will be arranged
+            if True:
                 moved = True
-                print()
                 current_air, current_alc, current_arl = new_air, new_alc, new_arl
             else:
                 print("not moved")
                
                 self.G=self.create_graph_from_indegree(self.init_parents,self.init_levels)
                 
-                self.draw_graph(self.generate_info_text(),name="new_graph.png", moved="")
+                self.draw_graph(self.generate_info_text(),name="new_graph.png")
                 print("------------")
                 break
 
         if moved:
             print("Node moved successfully.")
             self.remove_empty_level(original_level)
-            self.draw_graph(self.generate_info_text(),name="new_graph.png", moved="moved")
-            
-            
+            info = self.generate_info_text()
+            self.draw_graph(info,name="new_graph.png")
+            print(info)
+              
         else:
             print(f"Node {node} did not improve metrics. It remains at level {original_level}.")
        
-
+    """ Resets the graph """
     def create_graph_from_indegree(self, parent_dict, levels_dict):
         G = nx.DiGraph()
-        print("inner ", parent_dict,levels_dict)
         # Add nodes to the graph along with their levels
         for node in parent_dict.keys():
             G.add_node(node, level=levels_dict[node])
@@ -167,7 +183,10 @@ class Environment:
         for node, parents in parent_dict.items():
             for parent in parents:
                 G.add_edge(parent, node)
-        self.G=G
+
+        self.G = G
+        self.levels = self.init_levels
+        self.node_parents = self.init_parents
      
         return self.G
 
@@ -186,19 +205,15 @@ class Environment:
                     self.G.add_edge(grandparent, node)
 
 
-    def remove_levels(self,level):
+    def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.levels.items() if val == level]
     
         for key in keys_to_remove:
             del self.levels[key]
 
 
-    def remove_empty_level(self,level):
-        """ Shows where the node is located at which level """
-
-        current_level=level
+    def remove_empty_level(self, current_level):
         all_level = self.levels.values()
-        print(current_level)
         self.remove_levels(current_level)
         
         if current_level not in all_level:
@@ -211,11 +226,8 @@ class Environment:
 
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """
-        alc_numerator = sum(2 * self.indegree_dict[node] - 1 for node in self.G.nodes())
-        alc_denominator = max(self.levels.values()) + 1
-        alc = alc_numerator / alc_denominator if alc_denominator else 0
-        
-        return alc
+        ALC_numerator = sum(max(2 * indegree - 1, 0) for indegree in self.indegree_dict.values())
+        return ALC_numerator / (max(self.levels.values()) + 1) if self.levels.values() else 0
 
 
     def generate_info_text(self):
@@ -230,8 +242,8 @@ class Environment:
         )
 
 
-""" will be our main source, sparse.tamu.edu """
-matrix = np.array([
+""" basic_matrix.mtx
+
     [1, 0, 0, 0, 0, 0, 0, 0],
     [1, 1, 0, 0, 0, 0, 0, 0],
     [0, 0, 1, 0, 0, 0, 0, 0],
@@ -241,11 +253,10 @@ matrix = np.array([
     [0, 0, 1, 1, 0, 1, 1, 0],
     [1, 0, 0, 1, 0, 0, 1, 1],
 
-])
-
-
+"""
+matrix = mtx_to_array("basic_matrix.mtx")
 env = Environment(matrix)
 info_text = env.generate_info_text()
 env.draw_graph(name="init_graph", info_text=info_text)
-node_to_move=3
+node_to_move = 5
 env.move_node_to_higher_level(node_to_move)
