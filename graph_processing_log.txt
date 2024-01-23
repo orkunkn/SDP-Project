@@ -1,0 +1,393 @@
+Node 47 moved to level 11.
+True
+Node moved successfully. 47
+Node 46 moved to level 10.
+False
+Node moved successfully. 46
+Node 45 moved to level 10.
+False
+Node moved successfully. 45
+Node 47 moved to level 10.
+True
+Node moved successfully. 47
+Node 42 moved to level 9.
+False
+Node moved successfully. 42
+Node 44 moved to level 9.
+False
+Node moved successfully. 44
+Node 46 moved to level 9.
+False
+Node moved successfully. 46
+Node 45 moved to level 9.
+False
+Node moved successfully. 45
+Node 47 moved to level 9.
+True
+Node moved successfully. 47
+Node 40 moved to level 8.
+False
+Node moved successfully. 40
+Node 41 moved to level 8.
+False
+Node moved successfully. 41
+Node 43 moved to level 8.
+False
+Node moved successfully. 43
+Node 42 moved to level 8.
+False
+Node moved successfully. 42
+Node 44 moved to level 8.
+False
+Node moved successfully. 44
+Node 45 moved to level 8.
+False
+Node moved successfully. 45
+Node 46 moved to level 8.
+False
+Node moved successfully. 46
+Node 47 moved to level 8.
+True
+Node moved successfully. 47
+Node 36 moved to level 7.
+False
+Node moved successfully. 36
+Node 21 moved to level 7.
+False
+Node moved successfully. 21
+Node 23 moved to level 7.
+False
+Node moved successfully. 23
+Node 39 moved to level 7.
+False
+Node moved successfully. 39
+Node 22 moved to level 7.
+False
+Node moved successfully. 22
+Node 41 moved to level 7.
+False
+Node moved successfully. 41
+Node 40 moved to level 7.
+False
+Node moved successfully. 40
+Node 43 moved to level 7.
+False
+Node moved successfully. 43
+Node 44 moved to level 7.
+False
+Node moved successfully. 44
+Node 45 moved to level 7.
+False
+Node moved successfully. 45
+Node 42 moved to level 7.
+False
+Node moved successfully. 42
+Node 46 moved to level 7.
+False
+Node moved successfully. 46
+Node 47 moved to level 7.
+True
+Node moved successfully. 47
+Node 18 moved to level 6.
+False
+Node moved successfully. 18
+Node 19 moved to level 6.
+False
+Node moved successfully. 19
+Node 38 moved to level 6.
+False
+Node moved successfully. 38
+Node 17 moved to level 6.
+False
+Node moved successfully. 17
+Node 36 moved to level 6.
+False
+Node moved successfully. 36
+Node 21 moved to level 6.
+False
+Node moved successfully. 21
+Node 39 moved to level 6.
+False
+Node moved successfully. 39
+Node 22 moved to level 6.
+False
+Node moved successfully. 22
+Node 23 moved to level 6.
+False
+Node moved successfully. 23
+Node 41 moved to level 6.
+False
+Node moved successfully. 41
+Node 43 moved to level 6.
+False
+Node moved successfully. 43
+Node 40 moved to level 6.
+False
+Node moved successfully. 40
+Node 44 moved to level 6.
+False
+Node moved successfully. 44
+Node 45 moved to level 6.
+False
+Node moved successfully. 45
+Node 42 moved to level 6.
+False
+Node moved successfully. 42
+Node 46 moved to level 6.
+False
+Node moved successfully. 46
+Node 47 moved to level 6.
+True
+Node moved successfully. 47
+Node 15 moved to level 5.
+False
+Node moved successfully. 15
+Node 20 not moved, grandparents count (5) is not greater than AIR (5.229166666666667).
+Node 20 did not improve metrics. It remains at level 6.
+Node 37 moved to level 5.
+False
+Node moved successfully. 37
+Node 16 moved to level 5.
+False
+Node moved successfully. 16
+Node 18 moved to level 6.
+False
+Node moved successfully. 18
+Node 19 moved to level 6.
+False
+Node moved successfully. 19
+Node 38 moved to level 6.
+False
+Node moved successfully. 38
+Node 17 moved to level 6.
+True
+Node moved successfully. 17
+Node 22 moved to level 6.
+False
+Node moved successfully. 22
+Node 36 moved to level 6.
+False
+Node moved successfully. 36
+Node 21 moved to level 6.
+False
+Node moved successfully. 21
+Node 39 moved to level 6.
+False
+Node moved successfully. 39
+Node 41 moved to level 7.
+False
+Node moved successfully. 41
+Node 43 moved to level 7.
+False
+Node moved successfully. 43
+Node 23 moved to level 6.
+False
+Node moved successfully. 23
+Node 40 moved to level 7.
+True
+Node moved successfully. 40
+Node 44 moved to level 7.
+False
+Node moved successfully. 44
+Node 45 moved to level 8.
+False
+Node moved successfully. 45
+Node 42 moved to level 7.
+False
+Node moved successfully. 42
+Node 46 moved to level 8.
+True
+Node moved successfully. 46
+Node 47 moved to level 8.
+True
+Node moved successfully. 47
+Node 14 moved to level 4.
+False
+Node moved successfully. 14
+Node 15 moved to level 5.
+False
+Node moved successfully. 15
+Node 16 moved to level 4.
+False
+Node moved successfully. 16
+Node 34 moved to level 4.
+False
+Node moved successfully. 34
+Node 35 moved to level 4.
+False
+Node moved successfully. 35
+Node 33 moved to level 4.
+False
+Node moved successfully. 33
+Node 37 moved to level 4.
+False
+Node moved successfully. 37
+Node 13 moved to level 3.
+False
+Node moved successfully. 13
+Node 31 moved to level 3.
+False
+Node moved successfully. 31
+Node 32 moved to level 3.
+False
+Node moved successfully. 32
+Node 30 moved to level 3.
+False
+Node moved successfully. 30
+Node 14 moved to level 3.
+False
+Node moved successfully. 14
+Node 16 moved to level 3.
+False
+Node moved successfully. 16
+Node 33 moved to level 3.
+False
+Node moved successfully. 33
+Node 34 moved to level 3.
+False
+Node moved successfully. 34
+Node 35 moved to level 3.
+False
+Node moved successfully. 35
+Node 37 moved to level 3.
+True
+Node moved successfully. 37
+Node 12 not moved, grandparents count (2) is not greater than AIR (4.708333333333333).
+Node 12 did not improve metrics. It remains at level 3.
+Node 28 not moved, grandparents count (3) is not greater than AIR (4.708333333333333).
+Node 28 did not improve metrics. It remains at level 3.
+Node 11 not moved, grandparents count (4) is not greater than AIR (4.708333333333333).
+Node 11 did not improve metrics. It remains at level 3.
+Node 29 not moved, grandparents count (3) is not greater than AIR (4.708333333333333).
+Node 29 did not improve metrics. It remains at level 3.
+Node 13 moved to level 2.
+False
+Node moved successfully. 13
+Node 9 not moved, grandparents count (3) is not greater than AIR (3.6875).
+Node 9 did not improve metrics. It remains at level 3.
+Node 10 not moved, grandparents count (3) is not greater than AIR (3.6875).
+Node 10 did not improve metrics. It remains at level 3.
+Node 27 not moved, grandparents count (3) is not greater than AIR (3.6875).
+Node 27 did not improve metrics. It remains at level 3.
+Node 31 moved to level 2.
+False
+Node moved successfully. 31
+Node 32 moved to level 2.
+False
+Node moved successfully. 32
+Node 30 moved to level 2.
+False
+Node moved successfully. 30
+Node 14 moved to level 2.
+False
+Node moved successfully. 14
+Node 16 moved to level 2.
+False
+Node moved successfully. 16
+Node 33 moved to level 2.
+False
+Node moved successfully. 33
+Node 34 moved to level 2.
+False
+Node moved successfully. 34
+Node 35 moved to level 2.
+False
+Node moved successfully. 35
+Node 37 moved to level 2.
+False
+Node moved successfully. 37
+Node 6 not moved, grandparents count (2) is not greater than AIR (4.166666666666667).
+Node 6 did not improve metrics. It remains at level 2.
+Node 7 not moved, grandparents count (2) is not greater than AIR (4.166666666666667).
+Node 7 did not improve metrics. It remains at level 2.
+Node 24 not moved, grandparents count (2) is not greater than AIR (4.166666666666667).
+Node 24 did not improve metrics. It remains at level 2.
+Node 26 not moved, grandparents count (2) is not greater than AIR (4.166666666666667).
+Node 26 did not improve metrics. It remains at level 2.
+Node 13 moved to level 1.
+False
+Node moved successfully. 13
+Node 31 moved to level 1.
+False
+Node moved successfully. 31
+Node 32 moved to level 1.
+False
+Node moved successfully. 32
+Node 14 moved to level 1.
+False
+Node moved successfully. 14
+Node 30 moved to level 1.
+False
+Node moved successfully. 30
+Node 16 moved to level 1.
+False
+Node moved successfully. 16
+Node 33 moved to level 1.
+False
+Node moved successfully. 33
+Node 34 moved to level 1.
+False
+Node moved successfully. 34
+Node 35 moved to level 1.
+False
+Node moved successfully. 35
+Node 37 moved to level 1.
+False
+Node moved successfully. 37
+Node 8 not moved, grandparents count (0) is not greater than AIR (3.9375).
+Node 8 did not improve metrics. It remains at level 1.
+Node 25 not moved, grandparents count (0) is not greater than AIR (3.9375).
+Node 25 did not improve metrics. It remains at level 1.
+Node 3 not moved, grandparents count (0) is not greater than AIR (3.9375).
+Node 3 did not improve metrics. It remains at level 1.
+Node 4 not moved, grandparents count (0) is not greater than AIR (3.9375).
+Node 4 did not improve metrics. It remains at level 1.
+Node 5 not moved, grandparents count (0) is not greater than AIR (3.9375).
+Node 5 did not improve metrics. It remains at level 1.
+Node 13 moved to level 0.
+False
+Node moved successfully. 13
+Node 31 moved to level 0.
+False
+Node moved successfully. 31
+Node 32 moved to level 0.
+False
+Node moved successfully. 32
+Node 14 moved to level 0.
+False
+Node moved successfully. 14
+Node 30 moved to level 0.
+False
+Node moved successfully. 30
+Node 16 moved to level 0.
+False
+Node moved successfully. 16
+Node 33 moved to level 0.
+False
+Node moved successfully. 33
+Node 34 moved to level 0.
+False
+Node moved successfully. 34
+Node 35 moved to level 0.
+False
+Node moved successfully. 35
+Node 37 moved to level 0.
+False
+Node moved successfully. 37
+Node 0 did not improve metrics. It remains at level 0.
+Node 1 did not improve metrics. It remains at level 0.
+Node 2 did not improve metrics. It remains at level 0.
+Node 13 did not improve metrics. It remains at level 0.
+Node 31 did not improve metrics. It remains at level 0.
+Node 32 did not improve metrics. It remains at level 0.
+Node 14 did not improve metrics. It remains at level 0.
+Node 30 did not improve metrics. It remains at level 0.
+Node 16 did not improve metrics. It remains at level 0.
+Node 33 did not improve metrics. It remains at level 0.
+Node 34 did not improve metrics. It remains at level 0.
+Node 35 did not improve metrics. It remains at level 0.
+Node 37 did not improve metrics. It remains at level 0.
+True
+Nodes from level 4 moved to level 3.
+True
+Nodes from level 7 moved to level 3.
