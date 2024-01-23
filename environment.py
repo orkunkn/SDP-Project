@@ -1,6 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from mtx_to_array import mtx_to_array
+import sys
+
 
 class Environment:
     
@@ -54,15 +56,9 @@ class Environment:
                     self.node_parents[row].append(col)
                 else:
                     self.node_parents[row] = [col]
-            if row == col:
-                self.G.add_edge(col, row)
+            
 
-        # Remove nodes without edges, except for node 0
-        for x in range(1, self.matrix.shape[0]):
-            if not self.G.out_degree(x) and not self.G.in_degree(x):
-                self.G.remove_node(x)
-                if x in self.node_parents:
-                    del self.node_parents[x]
+    
         
         self.init_levels = self.levels.copy()
         self.init_parents = self.node_parents.copy()
@@ -117,13 +113,14 @@ class Environment:
 
 
     """ Graph drawing function """
-    def draw_graph(self, info_text="",name=""):
+    def draw_graph(self, info_text="",name="",levels={}):
 
-        pos = {node: (node, -level) for node, level in self.levels.items()}
+        pos = {node: (node, -level) for node, level in levels.items()}
         plt.figure(figsize=(10, 8)) 
-        nx.draw_networkx_nodes(self.G, pos, node_size=500)
-        nx.draw_networkx_edges(self.G, pos, edgelist=self.G.edges(), edge_color='black', arrows=True)
-        nx.draw_networkx_labels(self.G, pos, font_size=20, font_family="sans-serif")
+
+        nx.draw_networkx_nodes(self.G, pos, node_size=80)
+        nx.draw_networkx_edges(self.G, pos, edgelist=self.G.edges(), edge_color='black', arrows=True, arrowsize=5, width=0.45)
+        nx.draw_networkx_labels(self.G, pos, font_size=7, font_family="sans-serif")
 
         plt.text(0.005, 0.005, info_text, transform=plt.gca().transAxes, fontsize=13.5) 
 
@@ -141,41 +138,31 @@ class Environment:
         original_level = self.levels[node]
         moved = False
         current_air = self.AIR
-        current_alc = self.ALC
-        current_arl = self.ARL
-        print(self.generate_info_text())
-    
-        for new_level in range(original_level - 1, -1, -1):
-            self.move_node(node, new_level)
-            self.update_graph_after_movement(node, new_level)
-            self.calculate_graph_metrics() # Recalculate metrics after moving the node
 
-            new_air = self.AIR
-            new_alc = self.calculate_alc()
-            new_arl = self.ARL
-            # if condition will be arranged
-            if True:
+        for new_level in range(original_level - 1, -1, -1):
+            # Count grandparents for the new level
+            grandparents_count = self.calculate_total_grandparents(node)
+          
+            if grandparents_count > current_air:
+                self.move_node(node, new_level)
+                self.update_graph_after_movement(node, new_level)
+                self.calculate_graph_metrics()  
                 moved = True
-                current_air, current_alc, current_arl = new_air, new_alc, new_arl
-            else:
-                print("not moved")
-               
-                self.G=self.create_graph_from_indegree(self.init_parents,self.init_levels)
-                
-                self.draw_graph(self.generate_info_text(),name="new_graph.png")
-                print("------------")
+                print(f"Node {node} moved to level {new_level}.")
                 break
+            else:
+                
+                self.G=self.create_graph_from_indegree(self.init_parents,self.init_levels)
+                print(f"Node {node} not moved, grandparents count ({grandparents_count}) is not greater than AIR ({current_air}).")
+                break
+               
 
         if moved:
-            print("Node moved successfully.")
-            self.remove_empty_level(original_level)
-            info = self.generate_info_text()
-            self.draw_graph(info,name="new_graph.png")
-            print(info)
-              
+            x=self.remove_empty_level(original_level)
+            print("Node moved successfully.", node)
         else:
             print(f"Node {node} did not improve metrics. It remains at level {original_level}.")
-       
+
     """ Resets the graph """
     def create_graph_from_indegree(self, parent_dict, levels_dict):
         G = nx.DiGraph()
@@ -191,7 +178,7 @@ class Environment:
         self.G = G
         self.levels = self.init_levels
         self.node_parents = self.init_parents
-     
+        
         return self.G
 
 
@@ -209,6 +196,14 @@ class Environment:
                     self.G.add_edge(grandparent, node)
 
 
+    def calculate_total_grandparents(self, node):
+        grandparents = set()
+        for parent in self.G.predecessors(node):
+            grandparents.update(self.G.predecessors(parent))
+        return len(grandparents)
+
+
+
     def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.levels.items() if val == level]
     
@@ -218,16 +213,51 @@ class Environment:
 
     def remove_empty_level(self, current_level):
         all_level = self.levels.values()
-        self.remove_levels(current_level)
-        
+        print(current_level not in all_level)
         if current_level not in all_level:
+            self.remove_levels(current_level)
             for node,level in self.levels.items():
                 if level > current_level:
                     self.levels[node]-=1
         else:
             return False
+     
+    def move_nodes_from_small_levels(self):
+        level_counts = {level: 0 for level in set(self.levels.values())}
+        for node in self.G.nodes():
+            level_counts[self.levels[node]] += 1
 
+        for level, count in level_counts.items():
+            if count in [1, 2, 3]:
+                # Move all nodes from this level to the next higher level
+                for node in [n for n, lvl in self.levels.items() if lvl == level]:
+                    new_level = level - 1
+                    self.move_node(node, new_level)
+                    self.update_graph_after_movement(node, new_level)
+                self.calculate_graph_metrics()
+                self.remove_empty_level(level)
+                print(f"Nodes from level {level} moved to level {new_level}.")
+ 
 
+    def get_by_thin_levels(self):
+        for levels in self.state_level_vectors:
+            sub_dict = self.state_level_vectors[levels]
+
+            # Calculate the frequency of each value
+            value_frequencies = {}
+            for value in sub_dict.values():
+                if value in value_frequencies:
+                    value_frequencies[value] += 1
+                else:
+                    value_frequencies[value] = 1
+
+            # Sorting each inner dictionary by the frequency of its values (from lowest to highest)
+            sorted_sub_dict = dict(sorted(sub_dict.items(), key=lambda item: value_frequencies[item[1]]))
+            self.state_level_vectors[levels] = sorted_sub_dict
+
+        return self.state_level_vectors
+
+        
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """
         ALC_numerator = sum(max(2 * indegree - 1, 0) for indegree in self.indegree_dict.values())
@@ -246,21 +276,44 @@ class Environment:
         )
 
 
-""" basic_matrix.mtx
 
-    [1, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 1, 0, 1, 0, 0, 0, 0],
-    [0, 0, 1, 0, 1, 0, 0, 0],
-    [1, 1, 0, 1, 0, 1, 0, 0],
-    [0, 0, 1, 1, 0, 1, 1, 0],
-    [1, 0, 0, 1, 0, 0, 1, 1],
+matrix = mtx_to_array("bcsstk01.mtx")
 
-"""
-matrix = mtx_to_array("basic_matrix.mtx")
 env = Environment(matrix)
 info_text = env.generate_info_text()
-env.draw_graph(name="init_graph", info_text=info_text)
-node_to_move = 5
-env.move_node_to_higher_level(node_to_move)
+
+log_file = open("graph_processing_log.txt", "w")
+sys.stdout = log_file
+
+
+
+ordered_level_states=env.get_by_thin_levels()
+
+env.draw_graph(name="first", info_text=info_text, levels=env.levels)
+for states in reversed(list(ordered_level_states.keys())):
+    node_states=ordered_level_states[states]
+    sorted_tuples = sorted(node_states.items(), key=lambda item: item[1])
+    sorted_node_states = dict(sorted_tuples)
+ 
+    for node in sorted_node_states.keys():
+      
+        info_text = env.generate_info_text()
+        env.move_node_to_higher_level(node)
+        
+
+node_parents=env.node_parents
+levels=env.levels
+        #
+for node, parents in list(node_parents.items()):
+        node_level = levels[node]
+        node_parents[node] = [parent for parent in parents if levels[parent] <= node_level]
+        if node_level == 0:
+            
+            node_parents[node] = []
+
+env.create_graph_from_indegree(node_parents, levels)
+env.move_nodes_from_small_levels()
+env.draw_graph(name="tester", info_text=env.generate_info_text(), levels=env.levels)
+
+sys.stdout = sys.__stdout__
+log_file.close()
