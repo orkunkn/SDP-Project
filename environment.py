@@ -56,9 +56,6 @@ class Environment:
                     self.node_parents[row].append(col)
                 else:
                     self.node_parents[row] = [col]
-            
-
-    
         
         self.init_levels = self.levels.copy()
         self.init_parents = self.node_parents.copy()
@@ -276,16 +273,14 @@ class Environment:
         )
 
 
-
-matrix = mtx_to_array("bcsstk01.mtx")
+"""
+matrix = mtx_to_array("bcsstk17.mtx")
 
 env = Environment(matrix)
 info_text = env.generate_info_text()
 
 log_file = open("graph_processing_log.txt", "w")
 sys.stdout = log_file
-
-
 
 ordered_level_states=env.get_by_thin_levels()
 
@@ -303,7 +298,7 @@ for states in reversed(list(ordered_level_states.keys())):
 
 node_parents=env.node_parents
 levels=env.levels
-        #
+
 for node, parents in list(node_parents.items()):
         node_level = levels[node]
         node_parents[node] = [parent for parent in parents if levels[parent] <= node_level]
@@ -317,3 +312,4 @@ env.draw_graph(name="tester", info_text=env.generate_info_text(), levels=env.lev
 
 sys.stdout = sys.__stdout__
 log_file.close()
+"""
