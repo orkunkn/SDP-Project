@@ -1,27 +1,28 @@
 
 class Actions:
     
-    def __init__(self, environment):
+    def __init__(self, environment, constructor):
         self.env=environment
+        self.con = constructor
 
 
     def move_node_to_higher_level(self, node):
-        if node not in self.G.nodes():
+        if node not in self.env.G.nodes():
             print(f"Node {node} does not exist in the graph.")
             return
 
-        original_level = self.levels[node]
+        original_level = self.env.levels[node]
         moved = False
-        current_air = self.AIR
+        current_air = self.env.AIR
 
         for new_level in range(original_level - 1, -1, -1):
            
-            grandparents_count = self.calculate_total_grandparents(node)
+            grandparents_count = self.env.calculate_total_grandparents(node)
           
             if grandparents_count > current_air:
                 self.move_node(node, new_level)
-                self.update_graph_after_movement(node, new_level)
-                self.calculate_graph_metrics()  
+                self.env.update_graph_after_movement(node, new_level)
+                self.env.calculate_graph_metrics()  
                 moved = True
                 print(f"Node {node} moved to level {new_level}.")
                 break
@@ -62,18 +63,18 @@ class Actions:
             return False
      
     def move_nodes_from_small_levels(self):
-        level_counts = {level: 0 for level in set(self.levels.values())}
-        for node in self.G.nodes():
-            level_counts[self.levels[node]] += 1
+        level_counts = {level: 0 for level in set(self.env.levels.values())}
+        for node in self.env.G.nodes():
+            level_counts[self.env.levels[node]] += 1
 
         for level, count in level_counts.items():
             if count in [1, 2, 3]:
                 # Move all nodes from this level to the next higher level
-                for node in [n for n, lvl in self.levels.items() if lvl == level]:
+                for node in [n for n, lvl in self.env.levels.items() if lvl == level]:
                     new_level = level - 1
                     self.move_node(node, new_level)
-                    self.update_graph_after_movement(node, new_level)
-                self.calculate_graph_metrics()
+                    self.con.update_graph_after_movement(node, new_level)
+                self.con.calculate_graph_metrics()
                 self.remove_empty_level(level)
                 print(f"Nodes from level {level} moved to level {new_level}.")
 
