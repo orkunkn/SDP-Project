@@ -13,52 +13,38 @@ class Actions:
 
         original_level = self.env.levels[node]
         moved = False
-        current_air = self.env.AIR
 
         for new_level in range(original_level - 1, -1, -1):
-           
-            grandparents_count = self.env.calculate_total_grandparents(node)
           
-            if grandparents_count > current_air:
-                self.move_node(node, new_level)
-                self.env.update_graph_after_movement(node, new_level)
-                self.env.calculate_graph_metrics()  
-                moved = True
-                print(f"Node {node} moved to level {new_level}.")
-                break
-            else:
-                
-                self.G=self.create_graph_from_indegree(self.init_parents,self.init_levels)
-                print(f"Node {node} not moved, grandparents count ({grandparents_count}) is not greater than AIR ({current_air}).")
-                break
+            self.move_node(node, new_level)
+            self.con.update_graph_after_movement(node, new_level)
+            self.con.calculate_graph_metrics()  
+            moved = True
+            break
                
 
         if moved:
             x=self.remove_empty_level(original_level)
-            print("Node moved successfully.", node)
-        else:
-            print(f"Node {node} did not improve metrics. It remains at level {original_level}.")
 
         
     def move_node(self, node, new_level):
-        self.levels[node] = new_level
+        self.env.levels[node] = new_level
 
 
     def remove_levels(self, level):
-        keys_to_remove = [key for key, val in self.levels.items() if val == level]
+        keys_to_remove = [key for key, val in self.env.levels.items() if val == level]
     
         for key in keys_to_remove:
-            del self.levels[key]
+            del self.env.levels[key]
 
 
     def remove_empty_level(self, current_level):
-        all_level = self.levels.values()
-        print(current_level not in all_level)
+        all_level = self.env.levels.values()
         if current_level not in all_level:
             self.remove_levels(current_level)
-            for node,level in self.levels.items():
+            for node,level in self.env.levels.items():
                 if level > current_level:
-                    self.levels[node]-=1
+                    self.env.levels[node]-=1
         else:
             return False
      
