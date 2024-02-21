@@ -4,12 +4,13 @@ import networkx as nx
 class Graph:
 
     def __init__(self, environment):
-        self.env=environment
+        self.env = environment
 
-    def convert_matrix_to_graph(self):
-        rows, cols = self.env.matrix.nonzero()
 
-        for x in range(self.env.matrix.shape[0]):
+    def convert_matrix_to_graph(self, matrix):
+        rows, cols = matrix.nonzero()
+
+        for x in range(matrix.shape[0]):
             self.env.G.add_node(x)
             self.env.levels[x] = 0
 

@@ -2,7 +2,7 @@
 class Constructor:
     
     def __init__(self, environment):
-        self.env=environment
+        self.env = environment
 
     """ Calculate and store graph metrics. """
     def calculate_graph_metrics(self):
@@ -10,6 +10,7 @@ class Constructor:
         self.env.total_nodes = self.env.G.number_of_nodes()
         self.env.indegree_dict = {node: self.env.G.in_degree(node) for node in self.env.G.nodes()}
         
+        """
         self.env.level_costs = {}
         for node, level in self.env.levels.items():
             if level == 0:
@@ -21,6 +22,7 @@ class Constructor:
                 self.env.level_costs[level] += cost
             else:
                 self.env.level_costs[level] = cost
+        """
 
         # Count nodes in every level
         self.env.nodes_per_level = {}
@@ -40,6 +42,7 @@ class Constructor:
         # Average Level Cost
         self.env.ALC = self.calculate_alc()
 
+        """
         # Check each node's calculated value against ALC and store their level and node with indegree
         for node in self.env.G.nodes():
             value = 2 * self.env.indegree_dict[node] - 1
@@ -49,6 +52,7 @@ class Constructor:
                 if node_level not in self.env.state_level_vectors:
                     self.env.state_level_vectors[node_level] = {}
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
+        """
 
     
     def update_graph_after_movement(self, node, new_level):
@@ -65,6 +69,7 @@ class Constructor:
         grandparents = set()
         for parent in self.env.G.predecessors(node):
             grandparents.update(self.env.G.predecessors(parent))
+
         return len(grandparents)
 
 
