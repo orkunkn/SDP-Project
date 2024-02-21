@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+
 class Graph:
 
     def __init__(self, environment):
@@ -22,11 +23,6 @@ class Graph:
                     self.env.node_parents[row].append(col)
                 else:
                     self.env.node_parents[row] = [col]
-        
-        self.env.init_levels = self.env.levels.copy()
-        self.env.init_parents = self.env.node_parents.copy()
-            
-        return self.env.init_levels, self.env.init_parents
 
 
         """ Graph drawing function """

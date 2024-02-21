@@ -1,4 +1,3 @@
-import networkx as nx
 
 class Constructor:
     
@@ -50,26 +49,6 @@ class Constructor:
                 if node_level not in self.env.state_level_vectors:
                     self.env.state_level_vectors[node_level] = {}
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
-
-
-        """ Resets the graph """
-    def create_graph_from_indegree(self, parent_dict, levels_dict):
-        G = nx.DiGraph()
-        # Add nodes to the graph along with their levels
-        for node in parent_dict.keys():
-            G.add_node(node, level=levels_dict[node])
-
-        # Add edges based on the parent list
-        for node, parents in parent_dict.items():
-            for parent in parents:
-                G.add_edge(parent, node)
-
-        self.env.G = G
-        self.env.levels = self.env.init_levels
-        self.env.node_parents = self.env.init_parents
-        
-        return self.G
-
 
     
     def update_graph_after_movement(self, node, new_level):

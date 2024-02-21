@@ -6,29 +6,19 @@ class Actions:
         self.con = constructor
 
 
-    def move_node_to_higher_level(self, node):
-        if node not in self.env.G.nodes():
-            print(f"Node {node} does not exist in the graph.")
+    def move_node_to_higher_level(self, node, new_level):
+        if node not in self.env.G.nodes() or self.env.levels[node] - new_level < 0:
             return
 
         original_level = self.env.levels[node]
-        moved = False
 
-        for new_level in range(original_level - 1, -1, -1):
-          
-            self.move_node(node, new_level)
-            self.con.update_graph_after_movement(node, new_level)
-            self.con.calculate_graph_metrics()  
-            moved = True
-            break
-               
-
-        if moved:
-            x=self.remove_empty_level(original_level)
+        self.move_node(node, new_level)
+        self.con.update_graph_after_movement(node, self.env.levels[node] - new_level)
+        self.remove_empty_level(original_level)
 
         
     def move_node(self, node, new_level):
-        self.env.levels[node] = new_level
+        self.env.levels[node] = self.env.levels[node] - new_level
 
 
     def remove_levels(self, level):
