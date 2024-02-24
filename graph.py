@@ -27,9 +27,9 @@ class Graph:
 
 
         """ Graph drawing function """
-    def draw_graph(self, info_text="",name="",levels={}):
+    def draw_graph(self, info_text="",name=""):
 
-        pos = {node: (node, -level) for node, level in levels.items()}
+        pos = {node: (node, -level) for node, level in self.env.levels.items()}
         plt.figure(figsize=(10, 8)) 
 
         nx.draw_networkx_nodes(self.env.G, pos, node_size=80)

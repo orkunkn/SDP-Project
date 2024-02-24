@@ -4,6 +4,7 @@ from graph import Graph
 from constructor import Constructor
 from actions import Actions
 import networkx as nx
+import time
 
 class GraphEnv(gym.Env):
 
@@ -16,36 +17,91 @@ class GraphEnv(gym.Env):
 
         self.matrix = matrix
         
-        # A multi discrete action space. [Node, how many levels to move]. This is just a declarement.
+        # A discrete action space. Nodes will be chosen. This is just a declarement.
         # Initialization is handled in reset function because node number changes according to the matrix
-        self.action_space = gym.spaces.MultiDiscrete([10, 10])
+        self.action_space = gym.spaces.Discrete(10)
 
         # Observation space contains AIR, ALC, ARL values. Updated in every step.
         self.observation_space = gym.spaces.Box(low=0, high=10000, shape=(3,), dtype=np.float64)
         
         
     def step(self, action):
-        node_to_move = action[0]
-        how_many_levels_to_move = action[1]
 
-        # Node and how many levels to move is chosen randomly by agent.
-        self.actions.move_node_to_higher_level(node_to_move, how_many_levels_to_move)
+        # Node is chosen by agent.
+        node_to_move = action
+
+        # Keep the old values for reward comparison
+        old_max_level = max(self.levels.values())
+        old_level_node_count = self.node_count_per_level[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.node_count_per_level[self.levels[node_to_move]]
+        old_level_cost = self.level_costs[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.level_costs[self.levels[node_to_move]]
+
+        # Move the node one level upper
+        self.actions.move_node(node_to_move)
         # Metrics are updated after movement.
         self.constructor.calculate_graph_metrics()
 
+        """
         part_1 = self.k1*(self.constructor.calculate_total_grandparents(node_to_move) - len(self.node_parents.get(node_to_move, [])))
-        part_2 = self.k2*(10**(-self.nodes_per_level[self.levels[node_to_move]]*self.h))
-        part_3 = self.k3*(max(0,self.nodes_per_level[self.levels[node_to_move]]-self.ALC)**2)
+        part_2 = self.k2*(10**(-self.node_count_per_level[self.levels[node_to_move]]*self.h))
+        part_3 = self.k3*(max(0,self.node_count_per_level[self.levels[node_to_move]]-self.ALC)**2)
         reward = part_1 + part_2 + part_3
+        """
 
-        info = {'ALC': self.ALC, 'AIR': self.AIR, 'ARL':self.ARL, 'reward':reward, 'node_to_move':node_to_move, 'move_level': how_many_levels_to_move}
+        reward = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
+        info = {}
+
         observation = np.array([self.AIR, self.ARL, self.ALC])
-
-        print(info)
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
         return observation, reward, self.done, False, info
         
+    def calculate_reward(self, node, old_max_level, old_level_node_count, old_level_cost):
+        # New values
+        new_max_level = max(self.levels.values())
+        new_level_node_count = self.node_count_per_level[self.levels[node]]
+        new_level_cost = self.level_costs[self.levels[node]]
+
+        # Level delete reward
+        level_deleted_reward = 50*(old_max_level - new_max_level)
+
+        """ Node threshold reward """
+
+        # Reached threshold
+        if new_level_node_count == self.threshold:
+            threshold_reward = 30
+
+        # Got closer to threshold
+        elif abs(old_level_node_count - self.threshold) > abs(new_level_node_count - self.threshold):
+            threshold_reward = 15 / abs(new_level_node_count - self.threshold)
+        
+        # Got further from threshold
+        elif abs(old_level_node_count - self.threshold) < abs(new_level_node_count - self.threshold):
+            threshold_reward = -5 * abs(new_level_node_count - self.threshold)
+
+        # Rare cases for nodes in level 0
+        else:
+            threshold_reward = 0
+
+        """ Cost balance reward """
+            
+        # Level cost is equal to ALC
+        if new_level_cost == self.ALC:
+            cost_balance_reward = 30
+
+        # Level cost got closer to ALC
+        elif abs(new_level_cost - self.ALC) < abs(old_level_cost - self.ALC):
+            cost_balance_reward = abs(new_level_cost - self.ALC) / 10
+
+        # Level cost got further from ALC
+        else:
+            cost_balance_reward = -abs(new_level_cost - self.ALC) / 10
+        
+        total_reward = level_deleted_reward + threshold_reward + cost_balance_reward
+
+        info = {"level reward":level_deleted_reward, "threshold reward":threshold_reward, "cost balance reward":cost_balance_reward}
+        print(info)
+
+        return total_reward
 
     # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None):
@@ -61,7 +117,7 @@ class GraphEnv(gym.Env):
         self.state_level_vectors = {}
 
         # A node counter for every level.
-        self.nodes_per_level = {}
+        self.node_count_per_level = {}
 
         # A dictionary for cost of every level
         self.level_costs = {}
@@ -77,6 +133,8 @@ class GraphEnv(gym.Env):
         self.ARL = 0
         self.ALC = 0
 
+        self.threshold = 16
+
         # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)
         # Used by agent to required background calculations
@@ -89,9 +147,13 @@ class GraphEnv(gym.Env):
         self.constructor.calculate_graph_metrics()
         
         # Action and observation spaces are updated according to matrix
-        self.action_space = gym.spaces.MultiDiscrete([self.total_nodes, 10])
+        self.action_space = gym.spaces.Discrete(self.total_nodes)
+
         observation = np.array([self.AIR, self.ARL, self.ALC])
 
         # Do not change
         return observation, {}
+    
+    def render(self):
+        self.graph.draw_graph()
     

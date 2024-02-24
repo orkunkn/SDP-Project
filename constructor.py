@@ -10,11 +10,9 @@ class Constructor:
         self.env.total_nodes = self.env.G.number_of_nodes()
         self.env.indegree_dict = {node: self.env.G.in_degree(node) for node in self.env.G.nodes()}
         
-        """
+
         self.env.level_costs = {}
         for node, level in self.env.levels.items():
-            if level == 0:
-                continue
             indegree = self.env.indegree_dict[node]
             cost = max(0, 2 * indegree - 1)
 
@@ -22,15 +20,15 @@ class Constructor:
                 self.env.level_costs[level] += cost
             else:
                 self.env.level_costs[level] = cost
-        """
+
 
         # Count nodes in every level
-        self.env.nodes_per_level = {}
+        self.env.node_count_per_level = {}
         for node, level in self.env.levels.items():
-            if level in self.env.nodes_per_level:
-                self.env.nodes_per_level[level] += 1
+            if level in self.env.node_count_per_level:
+                self.env.node_count_per_level[level] += 1
             else:
-                self.env.nodes_per_level[level] = 1
+                self.env.node_count_per_level[level] = 1
          
         total_parents = sum(self.env.indegree_dict.values())
 
@@ -42,7 +40,7 @@ class Constructor:
         # Average Level Cost
         self.env.ALC = self.calculate_alc()
 
-        """
+
         # Check each node's calculated value against ALC and store their level and node with indegree
         for node in self.env.G.nodes():
             value = 2 * self.env.indegree_dict[node] - 1
@@ -52,9 +50,18 @@ class Constructor:
                 if node_level not in self.env.state_level_vectors:
                     self.env.state_level_vectors[node_level] = {}
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
-        """
 
-    
+        # Check each node's calculated value against ALC and store their level and node with indegree
+        for node in self.env.G.nodes():
+            if value < self.env.ALC:
+                node_level = self.env.levels[node]
+                # Add node and its indegree to the respective level
+                if node_level not in self.env.state_level_vectors:
+                    self.env.state_level_vectors[node_level] = {}
+                self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
+
+
+    """
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
         for parent in list(self.env.G.predecessors(node)):
@@ -63,7 +70,16 @@ class Constructor:
                 # Add edges from grandparents, if any
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
-
+    """
+    
+    def update_graph_after_movement(self, node):
+        # Remove edges from parents that are now on the same level
+        for parent in list(self.env.G.predecessors(node)):
+            if self.env.levels[parent] == self.env.levels[node]:
+                self.env.G.remove_edge(parent, node)
+                # Add edges from grandparents, if any
+                for grandparent in self.env.G.predecessors(parent):
+                    self.env.G.add_edge(grandparent, node)
 
     def calculate_total_grandparents(self, node):
         grandparents = set()
