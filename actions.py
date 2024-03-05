@@ -17,11 +17,11 @@ class Actions:
         self.con.update_graph_after_movement(node, new_level)
         self.remove_empty_level(original_level)
 
-    """
+
     def move_node(self, node, new_level):
         self.env.levels[node] = new_level
-    """
 
+    """
     def move_node(self, node):
         original_level = self.env.levels[node]
         if original_level == 0:
@@ -30,6 +30,7 @@ class Actions:
         self.env.levels[node] -= 1
         self.con.update_graph_after_movement(node)
         self.remove_empty_level(original_level)
+    """
 
     def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.env.levels.items() if val == level]

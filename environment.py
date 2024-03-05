@@ -4,7 +4,6 @@ from graph import Graph
 from constructor import Constructor
 from actions import Actions
 import networkx as nx
-import time
 
 class GraphEnv(gym.Env):
 
@@ -16,19 +15,61 @@ class GraphEnv(gym.Env):
         self.k3 = 1 # coefficient responsible for "if moved state is thin reward is less, else moved state is not thin reward is high"
 
         self.matrix = matrix
-        
-        # A discrete action space. Nodes will be chosen. This is just a declarement.
-        # Initialization is handled in reset function because node number changes according to the matrix
-        self.action_space = gym.spaces.Discrete(10)
 
-        # Observation space contains AIR, ALC, ARL values. Updated in every step.
-        self.observation_space = gym.spaces.Box(low=0, high=10000, shape=(3,), dtype=np.float64)
+        self.G = nx.DiGraph()
+
+        # A dictionary mapping each node to its level.
+        self.levels = {}
+
+        # A dictionary mapping each node to its parent node.
+        self.node_parents = {}
+
+        # A dictionary mapping possible changable levels, their nodes and their indegrees.
+        self.state_level_vectors = {}
+
+        # A node counter for every level.
+        self.node_count_per_level = {}
+
+        # A dictionary for cost of every level
+        self.level_costs = {}
+
+        # Number of total nodes in graph
+        self.total_nodes = 0
+
+        # Since there is not a clear ending statement, it is always False
+        self.done = False
+
+        # Updated in constructor
+        self.AIR = 0
+        self.ARL = 0
+        self.ALC = 0
+
+        self.threshold = 16
+
+        # Used for converting matrix to graph and drawing the graph
+        self.graph = Graph(self)
+        # Used by agent to required background calculations
+        self.constructor = Constructor(self)
+        # Used by agent for actions in graph
+        self.actions = Actions(self, self.constructor)
+
+        # Since reset is called before every learning process, these functions are done in reset
+        self.graph.convert_matrix_to_graph(self.matrix)
+        self.constructor.calculate_graph_metrics()
+        
+        # A discrete action space. Nodes will be chosen.
+        # Action and observation spaces are updated according to matrix
+        self.action_space = gym.spaces.MultiDiscrete([self.total_nodes, 10])
+
+        # Observation space contains nodes and their levels.
+        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(self.total_nodes,), dtype=np.int64)
         
         
     def step(self, action):
 
         # Node is chosen by agent.
-        node_to_move = action
+        node_to_move = action[0]
+        levels_to_drop = action[1]
 
         # Keep the old values for reward comparison
         old_max_level = max(self.levels.values())
@@ -36,7 +77,7 @@ class GraphEnv(gym.Env):
         old_level_cost = self.level_costs[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.level_costs[self.levels[node_to_move]]
 
         # Move the node one level upper
-        self.actions.move_node(node_to_move)
+        self.actions.move_node_to_higher_level(node_to_move, levels_to_drop)
         # Metrics are updated after movement.
         self.constructor.calculate_graph_metrics()
 
@@ -50,7 +91,11 @@ class GraphEnv(gym.Env):
         reward = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
         info = {}
 
-        observation = np.array([self.AIR, self.ARL, self.ALC])
+        # Convert object to a list
+        data = list(self.levels.values())
+        
+        # Convert list to an array
+        observation = np.array(data)
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
         return observation, reward, self.done, False, info
@@ -105,51 +150,14 @@ class GraphEnv(gym.Env):
 
     # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None):
-        self.G = nx.DiGraph()
 
-        # A dictionary mapping each node to its level.
-        self.levels = {}
-
-        # A dictionary mapping each node to its parent node.
-        self.node_parents = {}
-
-        # A dictionary mapping possible changable levels, their nodes and their indegrees.
-        self.state_level_vectors = {}
-
-        # A node counter for every level.
-        self.node_count_per_level = {}
-
-        # A dictionary for cost of every level
-        self.level_costs = {}
-
-        # Number of total nodes in graph
-        self.total_nodes = 0
-
-        # Since there is not a clear ending statement, it is always False
-        self.done = False
-
-        # Updated in constructor
-        self.AIR = 0
-        self.ARL = 0
-        self.ALC = 0
-
-        self.threshold = 16
-
-        # Used for converting matrix to graph and drawing the graph
-        self.graph = Graph(self)
-        # Used by agent to required background calculations
-        self.constructor = Constructor(self)
-        # Used by agent for actions in graph
-        self.actions = Actions(self, self.constructor)
-
-        # Since reset is called before every learning process, these functions are done in reset
-        self.graph.convert_matrix_to_graph(self.matrix)
         self.constructor.calculate_graph_metrics()
         
-        # Action and observation spaces are updated according to matrix
-        self.action_space = gym.spaces.Discrete(self.total_nodes)
-
-        observation = np.array([self.AIR, self.ARL, self.ALC])
+        # Convert object to a list
+        data = list(self.levels.values())
+        
+        # Convert list to an array
+        observation = np.array(data)
 
         # Do not change
         return observation, {}

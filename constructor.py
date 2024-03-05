@@ -61,7 +61,6 @@ class Constructor:
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
 
 
-    """
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
         for parent in list(self.env.G.predecessors(node)):
@@ -70,8 +69,8 @@ class Constructor:
                 # Add edges from grandparents, if any
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
-    """
     
+    """
     def update_graph_after_movement(self, node):
         # Remove edges from parents that are now on the same level
         for parent in list(self.env.G.predecessors(node)):
@@ -80,7 +79,7 @@ class Constructor:
                 # Add edges from grandparents, if any
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
-
+    """
     def calculate_total_grandparents(self, node):
         grandparents = set()
         for parent in self.env.G.predecessors(node):
