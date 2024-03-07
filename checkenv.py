@@ -1,6 +1,6 @@
 from stable_baselines3.common.env_checker import check_env
 from mtx_to_array import mtx_to_array
-from Environment import GraphEnv
+from Environment_thin import GraphEnv
 
 """ This test should be run after every change to environment. no output = good to go """
 

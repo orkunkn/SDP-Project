@@ -60,6 +60,8 @@ class Constructor:
                     self.env.state_level_vectors[node_level] = {}
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
 
+        self.env.nodes_in_thin_levels_mapping = self.find_nodes_in_thin_levels()
+
 
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
@@ -70,16 +72,7 @@ class Constructor:
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
     
-    """
-    def update_graph_after_movement(self, node):
-        # Remove edges from parents that are now on the same level
-        for parent in list(self.env.G.predecessors(node)):
-            if self.env.levels[parent] == self.env.levels[node]:
-                self.env.G.remove_edge(parent, node)
-                # Add edges from grandparents, if any
-                for grandparent in self.env.G.predecessors(parent):
-                    self.env.G.add_edge(grandparent, node)
-    """
+
     def calculate_total_grandparents(self, node):
         grandparents = set()
         for parent in self.env.G.predecessors(node):
@@ -105,6 +98,24 @@ class Constructor:
             self.env.state_level_vectors[levels] = sorted_sub_dict
 
         return self.env.state_level_vectors
+    
+    # Finds the nodes in thin levels and returns a mapping to their actual node number, starting from 0
+    def find_nodes_in_thin_levels(self):
+
+        # Find thin levels
+        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items() if node_count < self.env.ARL]
+        self.env.thin_levels.sort()
+
+        # Create a dictionary to map nodes to their indices
+        nodes_in_thin_levels_mapping = {}
+        index = 0
+        for node, level in self.env.levels.items():
+            if level in self.env.thin_levels:
+                self.env.levels_of_nodes_in_thin[node] = self.env.levels[node]
+                nodes_in_thin_levels_mapping[index] = node
+                index += 1
+
+        return nodes_in_thin_levels_mapping
 
         
     def calculate_alc(self):

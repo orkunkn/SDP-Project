@@ -6,31 +6,37 @@ class Actions:
         self.con = constructor
 
 
-    def move_node_to_higher_level(self, node, levels_to_drop):
+    def move_node_to_higher_level_thick(self, node, levels_to_drop):
         new_level = self.env.levels[node] - levels_to_drop
         if node not in self.env.G.nodes() or new_level < 0:
             return
 
         original_level = self.env.levels[node]
 
-        self.move_node(node, new_level)
+        self.env.levels[node] = new_level # Move node
         self.con.update_graph_after_movement(node, new_level)
         self.remove_empty_level(original_level)
 
 
-    def move_node(self, node, new_level):
-        self.env.levels[node] = new_level
+    def move_node_to_higher_level_thin(self, node):
+        # Find the index of the provided number in the array
+        index = self.env.thin_levels.index(self.env.levels[node])
 
-    """
-    def move_node(self, node):
-        original_level = self.env.levels[node]
-        if original_level == 0:
+        # Return the value before the provided number
+        if index == 0:
             return
-        
-        self.env.levels[node] -= 1
-        self.con.update_graph_after_movement(node)
+        else:
+            new_level = self.env.thin_levels[index - 1]
+
+        if node not in self.env.G.nodes():
+            return
+
+        original_level = self.env.levels[node]
+
+        self.env.levels[node] = new_level # Move node
+        self.con.update_graph_after_movement(node, new_level)
         self.remove_empty_level(original_level)
-    """
+
 
     def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.env.levels.items() if val == level]

@@ -36,6 +36,15 @@ class GraphEnv(gym.Env):
         # Number of total nodes in graph
         self.total_nodes = 0
 
+        # Nodes in thin levels (starting from 0) and their mapping to their actual number {0: actual_node_number, 1: actual_node_number...}
+        self.nodes_in_thin_levels_mapping = {}
+
+        # Thin levels in graph
+        self.thin_levels = []
+
+        # Levels of nodes which are in thin levels {level: node}
+        self.levels_of_nodes_in_thin = {}
+
         # Since there is not a clear ending statement, it is always False
         self.done = False
 
@@ -43,8 +52,6 @@ class GraphEnv(gym.Env):
         self.AIR = 0
         self.ARL = 0
         self.ALC = 0
-
-        self.threshold = 16
 
         # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)
@@ -56,20 +63,36 @@ class GraphEnv(gym.Env):
         # Since reset is called before every learning process, these functions are done in reset
         self.graph.convert_matrix_to_graph(self.matrix)
         self.constructor.calculate_graph_metrics()
-        
+
         # A discrete action space. Nodes will be chosen.
         # Action and observation spaces are updated according to matrix
-        self.action_space = gym.spaces.MultiDiscrete([self.total_nodes, 10])
+        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping))
 
-        # Observation space contains nodes and their levels.
-        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(self.total_nodes,), dtype=np.int64)
+        # Observation space contains nodes' levels.
+        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin),), dtype=np.int64)
         
         
     def step(self, action):
 
         # Node is chosen by agent.
-        node_to_move = action[0]
-        levels_to_drop = action[1]
+        agent_choice = action
+
+        # Finding the node from nodes in thin level dict
+        if agent_choice in self.nodes_in_thin_levels_mapping:
+            node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
+
+        # If node is previously moved and not in a thin level anymore
+        else:
+            reward = -100
+
+            # Convert object to a list
+            data = list(self.levels_of_nodes_in_thin.values())
+            
+            # Convert list to an array
+            observation = np.array(data)
+
+            # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
+            return observation, reward, self.done, False, {}
 
         # Keep the old values for reward comparison
         old_max_level = max(self.levels.values())
@@ -77,7 +100,7 @@ class GraphEnv(gym.Env):
         old_level_cost = self.level_costs[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.level_costs[self.levels[node_to_move]]
 
         # Move the node one level upper
-        self.actions.move_node_to_higher_level(node_to_move, levels_to_drop)
+        self.actions.move_node_to_higher_level_thin(node_to_move)
         # Metrics are updated after movement.
         self.constructor.calculate_graph_metrics()
 
@@ -88,14 +111,18 @@ class GraphEnv(gym.Env):
         reward = part_1 + part_2 + part_3
         """
 
-        reward = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
-        info = {}
+        reward, info = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
+
+        # Learning is done if there is one or zero thin level left.
+        self.done = len(self.thin_levels) <= 1
 
         # Convert object to a list
-        data = list(self.levels.values())
+        data = list(self.levels_of_nodes_in_thin.values())
         
         # Convert list to an array
         observation = np.array(data)
+
+        print(info)
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
         return observation, reward, self.done, False, info
@@ -112,16 +139,16 @@ class GraphEnv(gym.Env):
         """ Node threshold reward """
 
         # Reached threshold
-        if new_level_node_count == self.threshold:
+        if new_level_node_count == self.ARL:
             threshold_reward = 30
 
         # Got closer to threshold
-        elif abs(old_level_node_count - self.threshold) > abs(new_level_node_count - self.threshold):
-            threshold_reward = 15 / abs(new_level_node_count - self.threshold)
+        elif abs(old_level_node_count - self.ARL) > abs(new_level_node_count - self.ARL):
+            threshold_reward = 15 / abs(new_level_node_count - self.ARL)
         
         # Got further from threshold
-        elif abs(old_level_node_count - self.threshold) < abs(new_level_node_count - self.threshold):
-            threshold_reward = -5 * abs(new_level_node_count - self.threshold)
+        elif abs(old_level_node_count - self.ARL) < abs(new_level_node_count - self.ARL):
+            threshold_reward = -5 * abs(new_level_node_count - self.ARL)
 
         # Rare cases for nodes in level 0
         else:
@@ -144,9 +171,8 @@ class GraphEnv(gym.Env):
         total_reward = level_deleted_reward + threshold_reward + cost_balance_reward
 
         info = {"level reward":level_deleted_reward, "threshold reward":threshold_reward, "cost balance reward":cost_balance_reward}
-        print(info)
 
-        return total_reward
+        return total_reward, info
 
     # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None):
@@ -154,7 +180,7 @@ class GraphEnv(gym.Env):
         self.constructor.calculate_graph_metrics()
         
         # Convert object to a list
-        data = list(self.levels.values())
+        data = list(self.levels_of_nodes_in_thin.values())
         
         # Convert list to an array
         observation = np.array(data)
