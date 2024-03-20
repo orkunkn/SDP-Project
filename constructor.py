@@ -6,7 +6,6 @@ class Constructor:
 
     """ Calculate and store graph metrics. """
     def calculate_graph_metrics(self):
-        
         self.env.total_nodes = self.env.G.number_of_nodes()
         self.env.indegree_dict = {node: self.env.G.in_degree(node) for node in self.env.G.nodes()}
         
@@ -61,6 +60,7 @@ class Constructor:
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
 
         self.env.nodes_in_thin_levels_mapping = self.find_nodes_in_thin_levels()
+        self.update_levels_of_nodes_in_thin()
 
 
     def update_graph_after_movement(self, node, new_level):
@@ -111,12 +111,24 @@ class Constructor:
         index = 0
         for node, level in self.env.levels.items():
             if level in self.env.thin_levels:
-                self.env.levels_of_nodes_in_thin[node] = self.env.levels[node]
                 nodes_in_thin_levels_mapping[index] = node
                 index += 1
 
         return nodes_in_thin_levels_mapping
 
+    def init_levels_of_nodes_in_thin(self):
+        levels_of_nodes_in_thin = {}
+        indegrees_of_nodes_in_thin = {}
+        for node, level in self.env.levels.items():
+            if level in self.env.thin_levels:
+                levels_of_nodes_in_thin[node] = self.env.levels[node]
+                indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
+        return levels_of_nodes_in_thin, indegrees_of_nodes_in_thin
+    
+    def update_levels_of_nodes_in_thin(self):
+        for node, level in self.env.levels_of_nodes_in_thin.items():
+            self.env.levels_of_nodes_in_thin[node] = self.env.levels[node]
+            self.env.indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
         
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """

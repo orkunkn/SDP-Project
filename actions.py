@@ -19,6 +19,10 @@ class Actions:
 
 
     def move_node_to_higher_level_thin(self, node):
+
+        if node not in self.env.G.nodes():
+            return
+        
         # Find the index of the provided number in the array
         index = self.env.thin_levels.index(self.env.levels[node])
 
@@ -27,9 +31,6 @@ class Actions:
             return
         else:
             new_level = self.env.thin_levels[index - 1]
-
-        if node not in self.env.G.nodes():
-            return
 
         original_level = self.env.levels[node]
 

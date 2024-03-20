@@ -9,12 +9,89 @@ class GraphEnv(gym.Env):
 
     def __init__(self, matrix):
         super(GraphEnv, self).__init__()
-        self.k1 = 1 # coefficient responsible for increase in indegrees
-        self.k2 = 1 # coefficient responsible for getting close to an empty source level, value of k2 is the max reward aka emptied level
-        self.h = 0.2 # aka harshness, connected to the level emptying term, ranges between (0,1] , higher harshness causes the rewards to diminish except the max one.
-        self.k3 = 1 # coefficient responsible for "if moved state is thin reward is less, else moved state is not thin reward is high"
+
+        """ Reward coefficients """
+        self.k1 = 50
+        self.k2 = 1.5
+        self.k3 = 50
+        self.h1 = 0.03
+        self.h2 = 0.05
+        self.h3 = 0.08
 
         self.matrix = matrix
+        
+        
+    def step(self, action):
+
+        # Node is chosen by agent.
+        agent_choice = action
+
+        # Finding the node from nodes in thin level dict
+        if agent_choice in self.nodes_in_thin_levels_mapping:
+            node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
+        
+        # If node is previously moved and not in a thin level anymore
+        else:
+            reward = -100
+
+            terminated = False
+
+            # Convert object to a list
+            data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
+            
+            # Convert list to an array
+            observation = np.array(data)
+
+            # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
+            return observation, reward, terminated, False, {}
+
+        # Keep the old values for reward comparison
+        old_node_level = self.levels[node_to_move]
+        source_node_count = self.levels[node_to_move] - 1
+
+        # Move the node one level upper
+        self.actions.move_node_to_higher_level_thin(node_to_move)
+        # Metrics are updated after movement.
+        self.constructor.calculate_graph_metrics()
+
+        # reward, info = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
+        reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
+
+        # Learning is done if there is one or zero thin level left.
+        terminated = len(self.thin_levels) <= 1
+
+        # Convert object to a list
+        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
+        
+        # Convert list to an array
+        observation = np.array(data)
+
+        print(info)
+
+        # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
+        return observation, reward, terminated, False, info
+        
+    def calculate_reward(self, node, old_node_level, source_node_count):
+        new_level_cost = self.level_costs[self.levels[node]]
+        part_1, part_2, part_3 = 0, 0, 0
+
+        if old_node_level == self.levels[node]:
+            total_reward = -50
+        else:
+            part_1 = self.k1 * 10**(-source_node_count * self.h1)
+
+            part_2 = -self.k2 * (10**(self.h2 * (old_node_level - self.levels[node])))
+
+            part_3 = self.k3 / (1 + self.h3 * abs(new_level_cost - self.ALC))
+            total_reward = part_1 + part_2 + part_3
+
+        # info = {"part 1":part_1, "part 2":part_2, "part 3":part_3, "ALC":self.ALC, "ARL":self.ARL, "done": len(self.thin_levels) <= 1}
+        info = {"reward":total_reward, "ALC":self.ALC, "ARL":self.ARL, "AIR":self.AIR}
+        return total_reward, info
+    
+
+    # Used for reseting the environment. Do not change function inputs or return statement
+    def reset(self, seed=None):
 
         self.G = nx.DiGraph()
 
@@ -42,11 +119,8 @@ class GraphEnv(gym.Env):
         # Thin levels in graph
         self.thin_levels = []
 
-        # Levels of nodes which are in thin levels {level: node}
         self.levels_of_nodes_in_thin = {}
-
-        # Since there is not a clear ending statement, it is always False
-        self.done = False
+        self.indegrees_of_nodes_in_thin = {}
 
         # Updated in constructor
         self.AIR = 0
@@ -59,133 +133,22 @@ class GraphEnv(gym.Env):
         self.constructor = Constructor(self)
         # Used by agent for actions in graph
         self.actions = Actions(self, self.constructor)
-
+    
         # Since reset is called before every learning process, these functions are done in reset
         self.graph.convert_matrix_to_graph(self.matrix)
         self.constructor.calculate_graph_metrics()
 
-        # A discrete action space. Nodes will be chosen.
-        # Action and observation spaces are updated according to matrix
-        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping))
+        self.levels_of_nodes_in_thin, self.indegrees_of_nodes_in_thin = self.constructor.init_levels_of_nodes_in_thin()
 
-        # Observation space contains nodes' levels.
-        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin),), dtype=np.int64)
-        
-        
-    def step(self, action):
+        # A discrete action space. Nodes in thin levels will be chosen.
+        # Action and observation spaces are determined according to matrix.
+        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping), start=list(self.levels_of_nodes_in_thin.keys())[0])
 
-        # Node is chosen by agent.
-        agent_choice = action
+        # Observation space contains nodes' levels and indegrees which are in thin levels.
+        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin) + len(self.indegrees_of_nodes_in_thin),), dtype=np.int64)
 
-        # Finding the node from nodes in thin level dict
-        if agent_choice in self.nodes_in_thin_levels_mapping:
-            node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
-
-        # If node is previously moved and not in a thin level anymore
-        else:
-            reward = -100
-
-            # Convert object to a list
-            data = list(self.levels_of_nodes_in_thin.values())
-            
-            # Convert list to an array
-            observation = np.array(data)
-
-            # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
-            return observation, reward, self.done, False, {}
-
-        # Keep the old values for reward comparison
-        old_max_level = max(self.levels.values())
-        old_level_node_count = self.node_count_per_level[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.node_count_per_level[self.levels[node_to_move]]
-        old_level_cost = self.level_costs[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.level_costs[self.levels[node_to_move]]
-
-        # Move the node one level upper
-        self.actions.move_node_to_higher_level_thin(node_to_move)
-        # Metrics are updated after movement.
-        self.constructor.calculate_graph_metrics()
-
-        """
-        part_1 = self.k1*(self.constructor.calculate_total_grandparents(node_to_move) - len(self.node_parents.get(node_to_move, [])))
-        part_2 = self.k2*(10**(-self.node_count_per_level[self.levels[node_to_move]]*self.h))
-        part_3 = self.k3*(max(0,self.node_count_per_level[self.levels[node_to_move]]-self.ALC)**2)
-        reward = part_1 + part_2 + part_3
-        """
-
-        reward, info = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
-
-        # Learning is done if there is one or zero thin level left.
-        self.done = len(self.thin_levels) <= 1
-
-        # Convert object to a list
-        data = list(self.levels_of_nodes_in_thin.values())
-        
-        # Convert list to an array
+        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
         observation = np.array(data)
-
-        print(info)
-
-        # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
-        return observation, reward, self.done, False, info
-        
-    def calculate_reward(self, node, old_max_level, old_level_node_count, old_level_cost):
-        # New values
-        new_max_level = max(self.levels.values())
-        new_level_node_count = self.node_count_per_level[self.levels[node]]
-        new_level_cost = self.level_costs[self.levels[node]]
-
-        # Level delete reward
-        level_deleted_reward = 50*(old_max_level - new_max_level)
-
-        """ Node threshold reward """
-
-        # Reached threshold
-        if new_level_node_count == self.ARL:
-            threshold_reward = 30
-
-        # Got closer to threshold
-        elif abs(old_level_node_count - self.ARL) > abs(new_level_node_count - self.ARL):
-            threshold_reward = 15 / abs(new_level_node_count - self.ARL)
-        
-        # Got further from threshold
-        elif abs(old_level_node_count - self.ARL) < abs(new_level_node_count - self.ARL):
-            threshold_reward = -5 * abs(new_level_node_count - self.ARL)
-
-        # Rare cases for nodes in level 0
-        else:
-            threshold_reward = 0
-
-        """ Cost balance reward """
-            
-        # Level cost is equal to ALC
-        if new_level_cost == self.ALC:
-            cost_balance_reward = 30
-
-        # Level cost got closer to ALC
-        elif abs(new_level_cost - self.ALC) < abs(old_level_cost - self.ALC):
-            cost_balance_reward = abs(new_level_cost - self.ALC) / 10
-
-        # Level cost got further from ALC
-        else:
-            cost_balance_reward = -abs(new_level_cost - self.ALC) / 10
-        
-        total_reward = level_deleted_reward + threshold_reward + cost_balance_reward
-
-        info = {"level reward":level_deleted_reward, "threshold reward":threshold_reward, "cost balance reward":cost_balance_reward}
-
-        return total_reward, info
-
-    # Used for reseting the environment. Do not change function inputs or return statement
-    def reset(self, seed=None):
-
-        self.constructor.calculate_graph_metrics()
-        
-        # Convert object to a list
-        data = list(self.levels_of_nodes_in_thin.values())
-        
-        # Convert list to an array
-        observation = np.array(data)
-
-        # Do not change
         return observation, {}
     
     def render(self):
