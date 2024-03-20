@@ -1,20 +1,17 @@
-import networkx as nx
 
 class Constructor:
     
     def __init__(self, environment):
-        self.env=environment
+        self.env = environment
 
     """ Calculate and store graph metrics. """
     def calculate_graph_metrics(self):
-        
         self.env.total_nodes = self.env.G.number_of_nodes()
         self.env.indegree_dict = {node: self.env.G.in_degree(node) for node in self.env.G.nodes()}
         
+
         self.env.level_costs = {}
         for node, level in self.env.levels.items():
-            if level == 0:
-                continue
             indegree = self.env.indegree_dict[node]
             cost = max(0, 2 * indegree - 1)
 
@@ -23,13 +20,14 @@ class Constructor:
             else:
                 self.env.level_costs[level] = cost
 
+
         # Count nodes in every level
-        self.env.nodes_per_level = {}
+        self.env.node_count_per_level = {}
         for node, level in self.env.levels.items():
-            if level in self.env.nodes_per_level:
-                self.env.nodes_per_level[level] += 1
+            if level in self.env.node_count_per_level:
+                self.env.node_count_per_level[level] += 1
             else:
-                self.env.nodes_per_level[level] = 1
+                self.env.node_count_per_level[level] = 1
          
         total_parents = sum(self.env.indegree_dict.values())
 
@@ -41,6 +39,7 @@ class Constructor:
         # Average Level Cost
         self.env.ALC = self.calculate_alc()
 
+
         # Check each node's calculated value against ALC and store their level and node with indegree
         for node in self.env.G.nodes():
             value = 2 * self.env.indegree_dict[node] - 1
@@ -51,27 +50,19 @@ class Constructor:
                     self.env.state_level_vectors[node_level] = {}
                 self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
 
+        # Check each node's calculated value against ALC and store their level and node with indegree
+        for node in self.env.G.nodes():
+            if value < self.env.ALC:
+                node_level = self.env.levels[node]
+                # Add node and its indegree to the respective level
+                if node_level not in self.env.state_level_vectors:
+                    self.env.state_level_vectors[node_level] = {}
+                self.env.state_level_vectors[node_level][node] = self.env.indegree_dict[node]
 
-        """ Resets the graph """
-    def create_graph_from_indegree(self, parent_dict, levels_dict):
-        G = nx.DiGraph()
-        # Add nodes to the graph along with their levels
-        for node in parent_dict.keys():
-            G.add_node(node, level=levels_dict[node])
-
-        # Add edges based on the parent list
-        for node, parents in parent_dict.items():
-            for parent in parents:
-                G.add_edge(parent, node)
-
-        self.env.G = G
-        self.env.levels = self.env.init_levels
-        self.env.node_parents = self.env.init_parents
-        
-        return self.G
+        self.env.nodes_in_thin_levels_mapping = self.find_nodes_in_thin_levels()
+        self.update_levels_of_nodes_in_thin()
 
 
-    
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
         for parent in list(self.env.G.predecessors(node)):
@@ -80,12 +71,13 @@ class Constructor:
                 # Add edges from grandparents, if any
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
-
+    
 
     def calculate_total_grandparents(self, node):
         grandparents = set()
         for parent in self.env.G.predecessors(node):
             grandparents.update(self.env.G.predecessors(parent))
+
         return len(grandparents)
 
 
@@ -106,7 +98,37 @@ class Constructor:
             self.env.state_level_vectors[levels] = sorted_sub_dict
 
         return self.env.state_level_vectors
+    
+    # Finds the nodes in thin levels and returns a mapping to their actual node number, starting from 0
+    def find_nodes_in_thin_levels(self):
 
+        # Find thin levels
+        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items() if node_count < self.env.ARL]
+        self.env.thin_levels.sort()
+
+        # Create a dictionary to map nodes to their indices
+        nodes_in_thin_levels_mapping = {}
+        index = 0
+        for node, level in self.env.levels.items():
+            if level in self.env.thin_levels:
+                nodes_in_thin_levels_mapping[index] = node
+                index += 1
+
+        return nodes_in_thin_levels_mapping
+
+    def init_levels_of_nodes_in_thin(self):
+        levels_of_nodes_in_thin = {}
+        indegrees_of_nodes_in_thin = {}
+        for node, level in self.env.levels.items():
+            if level in self.env.thin_levels:
+                levels_of_nodes_in_thin[node] = self.env.levels[node]
+                indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
+        return levels_of_nodes_in_thin, indegrees_of_nodes_in_thin
+    
+    def update_levels_of_nodes_in_thin(self):
+        for node, level in self.env.levels_of_nodes_in_thin.items():
+            self.env.levels_of_nodes_in_thin[node] = self.env.levels[node]
+            self.env.indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
         
     def calculate_alc(self):
         """ Recalculate the Average Level Cost (ALC) after a node is moved. """

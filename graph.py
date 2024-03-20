@@ -1,14 +1,16 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+
 class Graph:
 
     def __init__(self, environment):
-        self.env=environment
+        self.env = environment
 
-    def convert_matrix_to_graph(self):
-        rows, cols = self.env.matrix.nonzero()
 
-        for x in range(self.env.matrix.shape[0]):
+    def convert_matrix_to_graph(self, matrix):
+        rows, cols = matrix.nonzero()
+
+        for x in range(matrix.shape[0]):
             self.env.G.add_node(x)
             self.env.levels[x] = 0
 
@@ -22,17 +24,12 @@ class Graph:
                     self.env.node_parents[row].append(col)
                 else:
                     self.env.node_parents[row] = [col]
-        
-        self.env.init_levels = self.env.levels.copy()
-        self.env.init_parents = self.env.node_parents.copy()
-            
-        return self.env.init_levels, self.env.init_parents
 
 
         """ Graph drawing function """
-    def draw_graph(self, info_text="",name="",levels={}):
+    def draw_graph(self, info_text="",name=""):
 
-        pos = {node: (node, -level) for node, level in levels.items()}
+        pos = {node: (node, -level) for node, level in self.env.levels.items()}
         plt.figure(figsize=(10, 8)) 
 
         nx.draw_networkx_nodes(self.env.G, pos, node_size=80)
