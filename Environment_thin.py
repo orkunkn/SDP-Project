@@ -4,6 +4,9 @@ from graph import Graph
 from constructor import Constructor
 from actions import Actions
 import networkx as nx
+import time
+import json
+import os
 
 class GraphEnv(gym.Env):
 
@@ -17,8 +20,16 @@ class GraphEnv(gym.Env):
         self.h1 = 0.03
         self.h2 = 0.05
         self.h3 = 0.08
-
+        self.time_step = 0
+        self.total_move_node_time = 0
+        self.total_calculate_metric_time = 0
+        self.total_step_time = 0
+        self.total_reward = 0
+        self.check_count = 100
         self.matrix = matrix
+
+        # Clear the log file at the start of each run
+        open("logfile.json", "w").close()
         
         
     def step(self, action):
@@ -45,17 +56,29 @@ class GraphEnv(gym.Env):
             # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
             return observation, reward, terminated, False, {}
 
+        start_time = time.time()
+
         # Keep the old values for reward comparison
         old_node_level = self.levels[node_to_move]
-        source_node_count = self.levels[node_to_move] - 1
+        source_node_count = self.node_count_per_level[old_node_level]
 
+        move_node_start_time = time.time()
         # Move the node one level upper
         self.actions.move_node_to_higher_level_thin(node_to_move)
-        # Metrics are updated after movement.
-        self.constructor.calculate_graph_metrics()
 
-        # reward, info = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
+        move_node_end_time = time.time()
+        self.total_move_node_time += move_node_end_time - move_node_start_time
+
+        is_node_moved = self.levels[node_to_move] != old_node_level
+        if is_node_moved:
+            # Metrics are updated after movement.
+            self.constructor.calculate_graph_metrics()
+
+        calculate_metric_end_time = time.time()
+        self.total_calculate_metric_time += calculate_metric_end_time - move_node_end_time
+
         reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
+        self.total_reward += reward
 
         # Learning is done if there is one or zero thin level left.
         terminated = len(self.thin_levels) <= 1
@@ -66,7 +89,40 @@ class GraphEnv(gym.Env):
         # Convert list to an array
         observation = np.array(data)
 
-        print(info)
+        end_time = time.time()
+        self.total_step_time = end_time - start_time
+
+        self.time_step += 1
+
+        if self.time_step % self.check_count == 0:
+            avg_move_node_time = self.total_move_node_time / self.check_count
+            avg_calculate_metric_time = self.total_calculate_metric_time / self.check_count
+            avg_reward = self.total_reward / self.check_count
+            avg_step_time = self.total_step_time / self.check_count
+
+            new_log_entry = {
+                "time_step": self.time_step,
+                "avg_reward": round(avg_reward, 2),
+                "info": info,
+                "avg_move_node_time": round(avg_move_node_time, 6),
+                "avg_calculate_metric_time": round(avg_calculate_metric_time, 6),
+                "avg_step_time": round(avg_step_time, 6)
+            }
+
+            log_file_path = "logfile.json"
+            log_data = []
+            if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0:
+                with open(log_file_path, "r") as f:
+                    log_data = json.load(f)
+
+            log_data.append(new_log_entry)
+
+            with open(log_file_path, "w") as f:
+                json.dump(log_data, f, indent=4)
+
+            self.total_move_node_time = 0
+            self.total_calculate_metric_time = 0
+            self.total_reward = 0
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
         return observation, reward, terminated, False, info
@@ -86,7 +142,11 @@ class GraphEnv(gym.Env):
             total_reward = part_1 + part_2 + part_3
 
         # info = {"part 1":part_1, "part 2":part_2, "part 3":part_3, "ALC":self.ALC, "ARL":self.ARL, "done": len(self.thin_levels) <= 1}
-        info = {"reward":total_reward, "ALC":self.ALC, "ARL":self.ARL, "AIR":self.AIR}
+        info = {
+            "ALC": round(self.ALC, 3),
+            "ARL": round(self.ARL, 3),
+            "AIR": round(self.AIR, 3)
+        }
         return total_reward, info
     
 
@@ -100,9 +160,6 @@ class GraphEnv(gym.Env):
 
         # A dictionary mapping each node to its parent node.
         self.node_parents = {}
-
-        # A dictionary mapping possible changable levels, their nodes and their indegrees.
-        self.state_level_vectors = {}
 
         # A node counter for every level.
         self.node_count_per_level = {}
