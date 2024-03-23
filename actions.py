@@ -34,8 +34,10 @@ class Actions:
 
         original_level = self.env.levels[node]
 
-        self.env.levels[node] = new_level # Move node
-        self.con.update_graph_after_movement(node, new_level)
+        while self.env.levels[node] != new_level:
+            self.env.levels[node] -= 1 # Move node 1 level
+            self.con.update_graph_after_movement(node, self.env.levels[node])
+
         self.remove_empty_level(original_level)
 
 
