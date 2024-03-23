@@ -81,7 +81,7 @@ class GraphEnv(gym.Env):
         self.total_reward += reward
 
         # Learning is done if there is one or zero thin level left.
-        terminated = len(self.thin_levels) <= 1
+        terminated = (len(self.thin_levels) <= 1) or (len(self.thin_levels) == 2 and max(self.levels.values()) == 1)
 
         # Convert object to a list
         data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())

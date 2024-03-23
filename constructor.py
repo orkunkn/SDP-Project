@@ -11,7 +11,7 @@ class Constructor:
         
         self.env.level_costs = {}
         self.env.node_count_per_level = {}
-        max_level = 0
+        total_cost = 0
         
         for node, level in self.env.levels.items():
             indegree = self.env.indegree_dict[node]
@@ -21,6 +21,7 @@ class Constructor:
                 self.env.level_costs[level] += cost
             else:
                 self.env.level_costs[level] = cost
+            total_cost += cost
 
             # Count nodes in every level
             if level in self.env.node_count_per_level:
@@ -28,9 +29,7 @@ class Constructor:
             else:
                 self.env.node_count_per_level[level] = 1
             
-            if max_level < level:
-                max_level = level
-
+        max_level = max(self.env.levels.values()) + 1
         total_parents = sum(self.env.indegree_dict.values())
 
         # 3 criterias to control
@@ -39,7 +38,7 @@ class Constructor:
         # Average Row per Level
         self.env.ARL = self.env.total_nodes / max_level if self.env.levels else 0
         # Average Level Cost
-        self.env.ALC = sum(self.env.level_costs.values()) / (max_level + 1) if max_level + 1 > 0 else 0
+        self.env.ALC = total_cost / max_level if max_level > 0 else 0
 
         self.env.nodes_in_thin_levels_mapping = self.find_nodes_in_thin_levels()
         self.update_levels_of_nodes_in_thin()
