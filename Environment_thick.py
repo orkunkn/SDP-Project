@@ -1,20 +1,147 @@
 import gymnasium as gym
 import numpy as np
 from graph import Graph
-from constructor import Constructor
+from constructor_thick import Constructor
 from actions import Actions
 import networkx as nx
+import time
+# logları her time stepde bir yap
+# reward part 2
+import json
+import os
 
 class GraphEnv(gym.Env):
 
     def __init__(self, matrix):
         super(GraphEnv, self).__init__()
-        self.k1 = 1 # coefficient responsible for increase in indegrees
-        self.k2 = 1 # coefficient responsible for getting close to an empty source level, value of k2 is the max reward aka emptied level
-        self.h = 0.2 # aka harshness, connected to the level emptying term, ranges between (0,1] , higher harshness causes the rewards to diminish except the max one.
-        self.k3 = 1 # coefficient responsible for "if moved state is thin reward is less, else moved state is not thin reward is high"
 
+        """ Reward coefficients """
+        self.k1 = 50
+        self.k2 = 1.5
+        self.k3 = 50
+        self.h1 = 0.03
+        self.h2 = 0.05
+        self.h3 = 0.08
         self.matrix = matrix
+        self.check_count = 2000
+        self.time_step = 0
+        self.total_step_time = 0
+        self.total_reward = 0
+        self.part_1_total = 0
+        self.part_2_total = 0
+        self.part_3_total = 0
+
+        # Clear the log file at the start of each run
+        open("logfile.json", "w").close()
+        
+        
+    def step(self, action):
+
+        # Node is chosen by agent.
+        node_to_move = action[0]
+        levels_to_drop = action[1]
+        terminated = False
+        
+        start_time = time.perf_counter()
+
+        # Keep the old values for reward comparison
+        old_node_level = self.levels[node_to_move]
+        source_node_count = self.node_count_per_level[old_node_level]
+
+        # Move the node one level upper
+        is_node_moved = self.actions.move_node_to_higher_level_thick(node_to_move, levels_to_drop)
+        
+        if is_node_moved:
+            # Metrics are updated after movement.
+            self.constructor.calculate_graph_metrics()
+
+        reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
+        self.total_reward += reward
+
+        data = list(self.levels.values()) + list(self.indegree_dict.values())
+        observation = np.array(data)
+
+        end_time = time.perf_counter()
+        self.total_step_time += end_time - start_time
+
+        self.time_step += 1
+
+        self.log_info(info)
+        sa = all(level_cost > 0.8 * self.first_ALC for level_cost in self.level_costs.values())
+        terminated = sa or max(self.levels.values()) == 0
+        if sa:
+            print("saaa")
+
+        # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
+
+        return observation, reward, terminated, False, info
+        
+    def calculate_reward(self, node, old_node_level, source_node_count):
+        new_level_cost = self.level_costs[self.levels[node]]
+        part_1, part_2, part_3 = 0, 0, 0
+
+        if old_node_level == self.levels[node]:
+            total_reward = -50
+        else:
+            part_1 = self.k1 * 10**(-source_node_count * self.h1)
+
+            part_2 = -self.k2 * (10**(self.h2 * (old_node_level - self.levels[node])))
+
+            part_3 = self.k3 / (1 + self.h3 * abs(new_level_cost - self.ALC))
+            self.part_1_total += part_1
+            self.part_2_total += part_2
+            self.part_3_total += part_3
+            total_reward = part_1 + part_2 + part_3
+
+
+        info = {
+            "ALC": round(self.ALC, 3),
+            "ARL": round(self.ARL, 3),
+            "AIR": round(self.AIR, 3)
+        }
+        return total_reward, info
+    
+    def log_info(self, info):
+
+        if self.time_step % self.check_count != 0:
+            return
+        
+        avg_reward = self.total_reward / self.check_count
+        avg_step_time = self.total_step_time / self.check_count
+        avg_part_1 = self.part_1_total / self.check_count
+        avg_part_2 = self.part_2_total / self.check_count
+        avg_part_3 = self.part_3_total / self.check_count
+
+        new_log_entry = {
+            "time_step": self.time_step,
+            "avg_reward": round(avg_reward, 2),
+            "part_1": round(avg_part_1, 2),
+            "part_2": round(avg_part_2, 2),
+            "part_3": round(avg_part_3, 2),
+            "info": info,
+            "avg_time": round(avg_step_time, 6)
+        }
+
+        log_file_path = "logfile.json"
+        log_data = []
+        if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0:
+            with open(log_file_path, "r") as f:
+                log_data = json.load(f)
+
+        log_data.append(new_log_entry)
+
+        with open(log_file_path, "w") as f:
+            json.dump(log_data, f, indent=4)
+
+        self.total_step_time = 0
+        self.total_reward = 0
+        self.part_1_total = 0
+        self.part_2_total = 0
+        self.part_3_total = 0
+    
+
+    # Used for reseting the environment. Do not change function inputs or return statement
+    def reset(self, seed=None):
 
         self.G = nx.DiGraph()
 
@@ -24,142 +151,42 @@ class GraphEnv(gym.Env):
         # A dictionary mapping each node to its parent node.
         self.node_parents = {}
 
-        # A dictionary mapping possible changable levels, their nodes and their indegrees.
-        self.state_level_vectors = {}
-
         # A node counter for every level.
         self.node_count_per_level = {}
 
         # A dictionary for cost of every level
         self.level_costs = {}
+        
+        self.indegree_dict = {}
 
         # Number of total nodes in graph
         self.total_nodes = 0
-
-        # Since there is not a clear ending statement, it is always False
-        self.done = False
 
         # Updated in constructor
         self.AIR = 0
         self.ARL = 0
         self.ALC = 0
 
-        self.threshold = 16
-
         # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)
         # Used by agent to required background calculations
         self.constructor = Constructor(self)
         # Used by agent for actions in graph
-        self.actions = Actions(self, self.constructor)
-
+        self.actions = Actions(self)
+    
         # Since reset is called before every learning process, these functions are done in reset
         self.graph.convert_matrix_to_graph(self.matrix)
         self.constructor.calculate_graph_metrics()
-        
-        # A discrete action space. Nodes will be chosen.
-        # Action and observation spaces are updated according to matrix
+
+        self.first_ALC = self.ALC
+        # Action and observation spaces are determined according to matrix.
         self.action_space = gym.spaces.MultiDiscrete([self.total_nodes, 10])
 
-        # Observation space contains nodes' levels.
-        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(self.total_nodes,), dtype=np.int64)
-        
-        
-    def step(self, action):
+        # Observation space contains nodes' levels and indegrees.
+        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels) + len(self.indegree_dict),), dtype=np.int64)
 
-        # Node is chosen by agent.
-        node_to_move = action[0]
-        levels_to_drop = action[1]
-
-        # Keep the old values for reward comparison
-        old_max_level = max(self.levels.values())
-        old_level_node_count = self.node_count_per_level[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.node_count_per_level[self.levels[node_to_move]]
-        old_level_cost = self.level_costs[self.levels[node_to_move] - 1] if self.levels[node_to_move] > 0 else self.level_costs[self.levels[node_to_move]]
-
-        # Move the node one level upper
-        self.actions.move_node_to_higher_level_thick(node_to_move, levels_to_drop)
-        # Metrics are updated after movement.
-        self.constructor.calculate_graph_metrics()
-
-        """
-        part_1 = self.k1*(self.constructor.calculate_total_grandparents(node_to_move) - len(self.node_parents.get(node_to_move, [])))
-        part_2 = self.k2*(10**(-self.node_count_per_level[self.levels[node_to_move]]*self.h))
-        part_3 = self.k3*(max(0,self.node_count_per_level[self.levels[node_to_move]]-self.ALC)**2)
-        reward = part_1 + part_2 + part_3
-        """
-
-        reward = self.calculate_reward(node_to_move, old_max_level, old_level_node_count, old_level_cost)
-        info = {}
-
-        # Convert object to a list
-        data = list(self.levels.values())
-        
-        # Convert list to an array
+        data = list(self.levels.values()) + list(self.indegree_dict.values())
         observation = np.array(data)
-
-        # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
-        return observation, reward, self.done, False, info
-        
-    def calculate_reward(self, node, old_max_level, old_level_node_count, old_level_cost):
-        # New values
-        new_max_level = max(self.levels.values())
-        new_level_node_count = self.node_count_per_level[self.levels[node]]
-        new_level_cost = self.level_costs[self.levels[node]]
-
-        # Level delete reward
-        level_deleted_reward = 50*(old_max_level - new_max_level)
-
-        """ Node threshold reward """
-
-        # Reached threshold
-        if new_level_node_count == self.threshold:
-            threshold_reward = 30
-
-        # Got closer to threshold
-        elif abs(old_level_node_count - self.threshold) > abs(new_level_node_count - self.threshold):
-            threshold_reward = 15 / abs(new_level_node_count - self.threshold)
-        
-        # Got further from threshold
-        elif abs(old_level_node_count - self.threshold) < abs(new_level_node_count - self.threshold):
-            threshold_reward = -5 * abs(new_level_node_count - self.threshold)
-
-        # Rare cases for nodes in level 0
-        else:
-            threshold_reward = 0
-
-        """ Cost balance reward """
-            
-        # Level cost is equal to ALC
-        if new_level_cost == self.ALC:
-            cost_balance_reward = 30
-
-        # Level cost got closer to ALC
-        elif abs(new_level_cost - self.ALC) < abs(old_level_cost - self.ALC):
-            cost_balance_reward = abs(new_level_cost - self.ALC) / 10
-
-        # Level cost got further from ALC
-        else:
-            cost_balance_reward = -abs(new_level_cost - self.ALC) / 10
-        
-        total_reward = level_deleted_reward + threshold_reward + cost_balance_reward
-
-        info = {"level reward":level_deleted_reward, "threshold reward":threshold_reward, "cost balance reward":cost_balance_reward}
-        print(info)
-
-        return total_reward
-
-    # Used for reseting the environment. Do not change function inputs or return statement
-    def reset(self, seed=None):
-
-        self.constructor.calculate_graph_metrics()
-        
-        # Convert object to a list
-        data = list(self.levels.values())
-        
-        # Convert list to an array
-        observation = np.array(data)
-
-        # Do not change
         return observation, {}
     
     def render(self):

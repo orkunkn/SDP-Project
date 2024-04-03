@@ -1,22 +1,23 @@
 
 class Actions:
     
-    def __init__(self, environment, constructor):
+    def __init__(self, environment):
         self.env = environment
-        self.con = constructor
 
 
     def move_node_to_higher_level_thick(self, node, levels_to_drop):
-        new_level = self.env.levels[node] - levels_to_drop
-        if node not in self.env.G.nodes() or new_level < 0:
-            return
-
         original_level = self.env.levels[node]
+        new_level = original_level - levels_to_drop
 
-        self.env.levels[node] = new_level # Move node
-        self.con.update_graph_after_movement(node, new_level)
+        if node not in self.env.G.nodes() or new_level < 0 or levels_to_drop == 0:
+            return False
+        
+        for i in range(1, levels_to_drop + 1):
+            self.env.levels[node] -= 1  # Move node 1 level
+            self.update_graph_after_movement(node, original_level - i)
+
         self.remove_empty_level(original_level)
-
+        return True
 
     def move_node_to_higher_level_thin(self, node):
 
@@ -36,10 +37,18 @@ class Actions:
 
         while self.env.levels[node] != new_level:
             self.env.levels[node] -= 1 # Move node 1 level
-            self.con.update_graph_after_movement(node, self.env.levels[node])
+            self.update_graph_after_movement(node, self.env.levels[node])
 
         self.remove_empty_level(original_level)
 
+    def update_graph_after_movement(self, node, new_level):
+        # Remove edges from parents that are now on the same level
+        for parent in list(self.env.G.predecessors(node)):
+            if self.env.levels[parent] == new_level:
+                self.env.G.remove_edge(parent, node)
+                # Add edges from grandparents, if any
+                for grandparent in self.env.G.predecessors(parent):
+                    self.env.G.add_edge(grandparent, node)
 
     def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.env.levels.items() if val == level]
