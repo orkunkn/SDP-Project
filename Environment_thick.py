@@ -48,6 +48,7 @@ class GraphEnv(gym.Env):
 
         # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)
+        self.graph.draw_graph(self)
         # Used by agent to required background calculations
         self.constructor = Constructor(self)
         # Used by agent for actions in graph

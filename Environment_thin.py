@@ -9,11 +9,8 @@ import json
 import os
 
 class GraphEnv(gym.Env):
-
     def __init__(self, matrix):
         super(GraphEnv, self).__init__()
-
-        """ Reward coefficients """
         self.k1 = 50
         self.k2 = 1.5
         self.k3 = 50
@@ -28,105 +25,115 @@ class GraphEnv(gym.Env):
         self.check_count = 100
         self.matrix = matrix
 
-        # Clear the log file at the start of each run
         open("logfile.json", "w").close()
-        
-        
+
     def step(self, action):
-
-        # Node is chosen by agent.
-        agent_choice = action
-
-        # Finding the node from nodes in thin level dict
-        if agent_choice in self.nodes_in_thin_levels_mapping:
-            node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
-        
-        # If node is previously moved and not in a thin level anymore
-        else:
-            reward = -100
-
-            terminated = False
-
-            # Convert object to a list
-            data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-            
-            # Convert list to an array
-            observation = np.array(data)
-
-            # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
-            return observation, reward, terminated, False, {}
-
+        print(self.thin_levels)
+       
         start_time = time.time()
+        agent_choice = action
+        # Check if the action is valid
+        print("valid", self.valid_actions_mask)
+        if action not in self.valid_actions_mask.keys():
+            reward=self.total_reward
+            terminated = False
+            observation = self.current_observation()
+            print("--------")
+            print("obs", observation)
+          
+            print("--------")
+            x={}
+            print(observation, reward, terminated, False, x)
+            return observation, reward, terminated, False, x
 
-        # Keep the old values for reward comparison
-        old_node_level = self.levels[node_to_move]
-        source_node_count = self.node_count_per_level[old_node_level]
+        # Continue with valid action processing
+        if action in self.valid_actions_mask.keys() and action in self.nodes_in_thin_levels_mapping.keys():
+            print("ww",self.nodes_in_thin_levels_mapping)
+            print(agent_choice)
+            node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
+            old_node_level = self.levels[node_to_move]
+            source_node_count = self.node_count_per_level.get(old_node_level, 0)
 
-        move_node_start_time = time.time()
-        # Move the node one level upper
-        self.actions.move_node_to_higher_level_thin(node_to_move)
+            move_node_start_time = time.time()
+            self.actions.move_node_to_higher_level_thin(node_to_move)
+            move_node_end_time = time.time()
 
-        move_node_end_time = time.time()
-        self.total_move_node_time += move_node_end_time - move_node_start_time
+            self.total_move_node_time += move_node_end_time - move_node_start_time
 
-        is_node_moved = self.levels[node_to_move] != old_node_level
-        if is_node_moved:
-            # Metrics are updated after movement.
-            self.constructor.calculate_graph_metrics()
+            is_node_moved = self.levels[node_to_move] != old_node_level
+            if is_node_moved:
+                self.constructor.calculate_graph_metrics()
 
-        calculate_metric_end_time = time.time()
-        self.total_calculate_metric_time += calculate_metric_end_time - move_node_end_time
+            calculate_metric_end_time = time.time()
+            self.total_calculate_metric_time += calculate_metric_end_time - move_node_end_time
 
-        reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
-        self.total_reward += reward
+            reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
+            self.total_reward += reward
 
-        # Learning is done if there is one or zero thin level left.
-        terminated = (len(self.thin_levels) <= 1) or (len(self.thin_levels) == 2 and max(self.levels.values()) == 1)
+            print("total reward", self.total_reward)
 
-        # Convert object to a list
+            terminated = (len(self.thin_levels) <= 1) or (len(self.thin_levels) == 2 and max(self.levels.values()) == 1)
+
+            observation = self.current_observation()
+
+            end_time = time.time()
+            self.total_step_time = end_time - start_time
+            self.time_step += 1
+
+            if self.time_step % self.check_count == 0:
+                self.log_statistics()
+            return observation, reward, terminated, False, info
+           
+
+        else:
+            observation = self.current_observation()  # Get the current observation
+            return observation, self.total_reward, False, False, {}
+
+
+    def update_action_mask(self):
+        self.valid_actions_mask = {}
+        for action, node in self.nodes_in_thin_levels_mapping.items():
+            parent_count = len(self.node_parents.get(node, []))
+            grandparents_count = sum(len(self.node_parents.get(parent, [])) for parent in self.node_parents.get(node, []))
+            if grandparents_count > parent_count:
+                self.valid_actions_mask[action] = True
+        print("updated space", self.valid_actions_mask)
+
+    def current_observation(self):
         data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-        
-        # Convert list to an array
-        observation = np.array(data)
 
-        end_time = time.time()
-        self.total_step_time = end_time - start_time
+        # Make sure the data is in the correct format (e.g., NumPy array) and matches the observation space definition
+        observation = np.array(data, dtype=np.float32)  # Ensure the data type matches the observation space
+        return observation
 
-        self.time_step += 1
 
-        if self.time_step % self.check_count == 0:
-            avg_move_node_time = self.total_move_node_time / self.check_count
-            avg_calculate_metric_time = self.total_calculate_metric_time / self.check_count
-            avg_reward = self.total_reward / self.check_count
-            avg_step_time = self.total_step_time / self.check_count
+    def log_statistics(self):
+        avg_move_node_time = self.total_move_node_time / self.check_count
+        avg_calculate_metric_time = self.total_calculate_metric_time / self.check_count
+        avg_reward = self.total_reward / self.check_count
+        avg_step_time = self.total_step_time / self.check_count
 
-            new_log_entry = {
-                "time_step": self.time_step,
-                "avg_reward": round(avg_reward, 2),
-                "info": info,
-                "avg_move_node_time": round(avg_move_node_time, 6),
-                "avg_calculate_metric_time": round(avg_calculate_metric_time, 6),
-                "avg_step_time": round(avg_step_time, 6)
-            }
+        print("----", avg_reward)
 
-            log_file_path = "logfile.json"
-            log_data = []
-            if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0:
-                with open(log_file_path, "r") as f:
-                    log_data = json.load(f)
+        new_log_entry = {
+            "time_step": self.time_step,
+            "avg_reward": round(avg_reward, 2),
+            "avg_move_node_time": round(avg_move_node_time, 6),
+            "avg_calculate_metric_time": round(avg_calculate_metric_time, 6),
+            "avg_step_time": round(avg_step_time, 6)
+        }
 
-            log_data.append(new_log_entry)
+        with open("logfile.json", "a") as f:
+            json.dump(new_log_entry, f, indent=4)
+            f.write("\n")
 
-            with open(log_file_path, "w") as f:
-                json.dump(log_data, f, indent=4)
+       
+        self.total_move_node_time = 0
+        self.total_calculate_metric_time = 0
+        self.total_reward = 0
 
-            self.total_move_node_time = 0
-            self.total_calculate_metric_time = 0
-            self.total_reward = 0
 
-        # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
-        return observation, reward, terminated, False, info
-        
+
     def calculate_reward(self, node, old_node_level, source_node_count):
         new_level_cost = self.level_costs[self.levels[node]]
         part_1, part_2, part_3 = 0, 0, 0
@@ -148,66 +155,43 @@ class GraphEnv(gym.Env):
             "AIR": round(self.AIR, 3)
         }
         return total_reward, info
-    
 
-    # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None):
-
         self.G = nx.DiGraph()
-
-        # A dictionary mapping each node to its level.
         self.levels = {}
-
-        # A dictionary mapping each node to its parent node.
         self.node_parents = {}
-
-        # A node counter for every level.
         self.node_count_per_level = {}
-
-        # A dictionary for cost of every level
         self.level_costs = {}
-
-        # Number of total nodes in graph
         self.total_nodes = 0
-
-        # Nodes in thin levels (starting from 0) and their mapping to their actual number {0: actual_node_number, 1: actual_node_number...}
         self.nodes_in_thin_levels_mapping = {}
-
-        # Thin levels in graph
         self.thin_levels = []
-
         self.levels_of_nodes_in_thin = {}
         self.indegrees_of_nodes_in_thin = {}
 
-        # Updated in constructor
         self.AIR = 0
         self.ARL = 0
         self.ALC = 0
 
-        # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)
-        # Used by agent to required background calculations
         self.constructor = Constructor(self)
-        # Used by agent for actions in graph
         self.actions = Actions(self, self.constructor)
-    
-        # Since reset is called before every learning process, these functions are done in reset
+
         self.graph.convert_matrix_to_graph(self.matrix)
         self.constructor.calculate_graph_metrics()
 
         self.levels_of_nodes_in_thin, self.indegrees_of_nodes_in_thin = self.constructor.init_levels_of_nodes_in_thin()
 
-        # A discrete action space. Nodes in thin levels will be chosen.
-        # Action and observation spaces are determined according to matrix.
-        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping), start=list(self.levels_of_nodes_in_thin.keys())[0])
+        # Initialize the action space with the number of nodes in thin levels
+        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping))
 
-        # Observation space contains nodes' levels and indegrees which are in thin levels.
+        # Initialize the observation space based on the levels and indegrees of nodes in thin levels
         self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin) + len(self.indegrees_of_nodes_in_thin),), dtype=np.int64)
 
-        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-        observation = np.array(data)
-        return observation, {}
-    
+        self.update_action_mask()  # Initialize the action mask based on the current state
+
+        return self.current_observation(), {}
+
     def render(self):
         self.graph.draw_graph()
-    
+
+ 

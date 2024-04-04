@@ -10,8 +10,10 @@ if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 """
 
-matrix = mtx_to_array("mtx_files/bcsstk17.mtx")
+matrix = mtx_to_array("mtx_files/494_bus.mtx")
+
 env = GraphEnv(matrix)
+
 env.reset() # Has to be called before every learn
 
 """
@@ -24,7 +26,7 @@ model = PPO("MlpPolicy", env, verbose=1)
 model.learn(total_timesteps=100000)
 
 
-# env.render()
+env.render()
 """
 # To save the model after learning
 model.save(f"{models_dir}/PPO")
