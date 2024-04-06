@@ -5,10 +5,6 @@ from constructor import Constructor
 from actions import Actions
 import networkx as nx
 import time
-# wallclock time or cpu tick (updated)
-# logları her time stepde bir yap
-# optimization
-# reward part 2
 import json
 import os
 
@@ -68,9 +64,8 @@ class GraphEnv(gym.Env):
         source_node_count = self.node_count_per_level[old_node_level]
 
         # Move the node one level upper
-        self.actions.move_node_to_higher_level_thin(node_to_move)
+        is_node_moved = self.actions.move_node_to_higher_level_thin(node_to_move)
 
-        is_node_moved = self.levels[node_to_move] != old_node_level
         if is_node_moved:
             # Metrics are updated after movement.
             self.constructor.calculate_graph_metrics()
@@ -92,17 +87,12 @@ class GraphEnv(gym.Env):
 
         self.time_step += 1
 
-        if self.time_step % self.check_count == 0:
-            self.log_info(info)
-            self.total_step_time = 0
-            self.total_reward = 0
-            self.part_1_total = 0
-            self.part_2_total = 0
-            self.part_3_total = 0
+        self.log_info(info)
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
         return observation, reward, terminated, False, info
         
+
     def calculate_reward(self, node, old_node_level, source_node_count):
         new_level_cost = self.level_costs[self.levels[node]]
         part_1, part_2, part_3 = 0, 0, 0
@@ -127,10 +117,15 @@ class GraphEnv(gym.Env):
             "ARL": round(self.ARL, 3),
             "AIR": round(self.AIR, 3)
         }
+
         return total_reward, info
     
-    def log_info(self, info):
 
+    def log_info(self, info):
+        
+        if self.time_step % self.check_count != 0:
+            return
+        
         avg_reward = self.total_reward / self.check_count
         avg_step_time = self.total_step_time / self.check_count
         avg_part_1 = self.part_1_total / self.check_count
@@ -158,6 +153,12 @@ class GraphEnv(gym.Env):
 
         with open(log_file_path, "w") as f:
             json.dump(log_data, f, indent=4)
+
+        self.total_step_time = 0
+        self.total_reward = 0
+        self.part_1_total = 0
+        self.part_2_total = 0
+        self.part_3_total = 0
     
 
     # Used for reseting the environment. Do not change function inputs or return statement
@@ -216,8 +217,10 @@ class GraphEnv(gym.Env):
 
         data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
         observation = np.array(data)
+
         return observation, {}
     
+
     def render(self):
         self.graph.draw_graph()
     

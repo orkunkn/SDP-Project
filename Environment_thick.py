@@ -5,8 +5,6 @@ from constructor_thick import Constructor
 from actions import Actions
 import networkx as nx
 import time
-# logları her time stepde bir yap
-# reward part 2
 import json
 import os
 
@@ -69,13 +67,12 @@ class GraphEnv(gym.Env):
         self.log_info(info)
         sa = all(level_cost > 0.8 * self.first_ALC for level_cost in self.level_costs.values())
         terminated = sa or max(self.levels.values()) == 0
-        if sa:
-            print("saaa")
 
         # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
 
         return observation, reward, terminated, False, info
         
+
     def calculate_reward(self, node, old_node_level, source_node_count):
         new_level_cost = self.level_costs[self.levels[node]]
         part_1, part_2, part_3 = 0, 0, 0
@@ -101,6 +98,7 @@ class GraphEnv(gym.Env):
         }
         return total_reward, info
     
+
     def log_info(self, info):
 
         if self.time_step % self.check_count != 0:
@@ -187,8 +185,10 @@ class GraphEnv(gym.Env):
 
         data = list(self.levels.values()) + list(self.indegree_dict.values())
         observation = np.array(data)
+
         return observation, {}
     
+
     def render(self):
         self.graph.draw_graph()
     

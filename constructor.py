@@ -44,18 +44,11 @@ class Constructor:
         self.update_levels_of_nodes_in_thin()
     
 
-    def calculate_total_grandparents(self, node):
-        grandparents = set()
-        for parent in self.env.G.predecessors(node):
-            grandparents.update(self.env.G.predecessors(parent))
-
-        return len(grandparents)
-    
     # Finds the nodes in thin levels and returns a mapping to their actual node number, starting from 0
     def find_nodes_in_thin_levels(self):
 
         # Find thin levels
-        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items() if node_count < self.env.ARL]
+        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items() if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC]
         self.env.thin_levels.sort()
 
         # Create a dictionary to map nodes to their indices
@@ -68,6 +61,7 @@ class Constructor:
 
         return nodes_in_thin_levels_mapping
 
+
     def init_levels_of_nodes_in_thin(self):
         levels_of_nodes_in_thin = {}
         indegrees_of_nodes_in_thin = {}
@@ -77,8 +71,9 @@ class Constructor:
                 indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
         return levels_of_nodes_in_thin, indegrees_of_nodes_in_thin
     
+
     def update_levels_of_nodes_in_thin(self):
-        for node, level in self.env.levels_of_nodes_in_thin.items():
+        for node in self.env.levels_of_nodes_in_thin.keys():
             self.env.levels_of_nodes_in_thin[node] = self.env.levels[node]
             self.env.indegrees_of_nodes_in_thin[node] = self.env.indegree_dict[node]
     
@@ -91,4 +86,4 @@ class Constructor:
             f"Indegree of Each Node: {self.env.indegree_dict}\n"
             f"Average Indegree per Row (AIR): {self.env.AIR:.2f}\n"
             f"Average Level Cost (ALC): {self.env.ALC:.2f}\n"
-            f"Average Number of Rows per Level (ARL): {self.env.total_nodes / (max(self.env.levels.values()) + 1):.2f}" )
+            f"Average Number of Rows per Level (ARL): {self.env.ARL:.2f}" )

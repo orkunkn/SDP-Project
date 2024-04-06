@@ -1,5 +1,3 @@
-import json
-import time
 
 class Constructor:
     
@@ -43,14 +41,6 @@ class Constructor:
         self.env.ALC = total_cost / max_level if max_level > 0 else 0
     
 
-    def calculate_total_grandparents(self, node):
-        grandparents = set()
-        for parent in self.env.G.predecessors(node):
-            grandparents.update(self.env.G.predecessors(parent))
-
-        return len(grandparents)
-    
-
     def generate_info_text(self):
         """ Generate information text about the graph metrics. """
         return (
@@ -59,4 +49,4 @@ class Constructor:
             f"Indegree of Each Node: {self.env.indegree_dict}\n"
             f"Average Indegree per Row (AIR): {self.env.AIR:.2f}\n"
             f"Average Level Cost (ALC): {self.env.ALC:.2f}\n"
-            f"Average Number of Rows per Level (ARL): {self.env.total_nodes / (max(self.env.levels.values()) + 1):.2f}" )
+            f"Average Number of Rows per Level (ARL): {self.env.total_nodes / self.env.ARL:.2f}" )

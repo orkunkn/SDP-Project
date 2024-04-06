@@ -19,17 +19,18 @@ class Actions:
         self.remove_empty_level(original_level)
         return True
 
+
     def move_node_to_higher_level_thin(self, node):
 
         if node not in self.env.G.nodes():
-            return
+            return False
         
         # Find the index of the provided number in the array
         index = self.env.thin_levels.index(self.env.levels[node])
 
         # Return the value before the provided number
         if index == 0:
-            return
+            return False
         else:
             new_level = self.env.thin_levels[index - 1]
 
@@ -40,6 +41,8 @@ class Actions:
             self.update_graph_after_movement(node, self.env.levels[node])
 
         self.remove_empty_level(original_level)
+        return True
+
 
     def update_graph_after_movement(self, node, new_level):
         # Remove edges from parents that are now on the same level
@@ -50,6 +53,7 @@ class Actions:
                 for grandparent in self.env.G.predecessors(parent):
                     self.env.G.add_edge(grandparent, node)
 
+
     def remove_levels(self, level):
         keys_to_remove = [key for key, val in self.env.levels.items() if val == level]
     
@@ -58,12 +62,11 @@ class Actions:
 
 
     def remove_empty_level(self, current_level):
-        all_level = self.env.levels.values()
-        if current_level not in all_level:
+        if current_level not in self.env.levels.values():
             self.remove_levels(current_level)
-            for node,level in self.env.levels.items():
+            for node, level in self.env.levels.items():
                 if level > current_level:
-                    self.env.levels[node]-=1
+                    self.env.levels[node] -= 1
         else:
             return False
      
