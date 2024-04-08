@@ -8,6 +8,9 @@ import time
 import json
 import os
 
+MAX_ACTION_SPACE = 115000
+MAX_OBS_SPACE = MAX_ACTION_SPACE * 2
+
 class GraphEnv(gym.Env):
 
     def __init__(self, matrix):
@@ -175,6 +178,8 @@ class GraphEnv(gym.Env):
         # A node counter for every level.
         self.node_count_per_level = {}
 
+        self.indegree_dict = {}
+
         # A dictionary for cost of every level
         self.level_costs = {}
 
@@ -185,7 +190,7 @@ class GraphEnv(gym.Env):
         self.nodes_in_thin_levels_mapping = {}
 
         # Thin levels in graph
-        self.thin_levels = []
+        self.thin_levels = set()
 
         self.levels_of_nodes_in_thin = {}
         self.indegrees_of_nodes_in_thin = {}
@@ -214,10 +219,11 @@ class GraphEnv(gym.Env):
 
         # Observation space contains nodes' levels and indegrees which are in thin levels.
         self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin) + len(self.indegrees_of_nodes_in_thin),), dtype=np.int64)
+        # pwtk thin level sayısı = 114901 (max thin level)
 
         data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
         observation = np.array(data)
-
+        
         return observation, {}
     
 

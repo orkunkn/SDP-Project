@@ -25,14 +25,16 @@ class Actions:
         if node not in self.env.G.nodes():
             return False
         
+        thin_levels = sorted(list(self.env.thin_levels))
+        
         # Find the index of the provided number in the array
-        index = self.env.thin_levels.index(self.env.levels[node])
+        index = thin_levels.index(self.env.levels[node])
 
         # Return the value before the provided number
         if index == 0:
             return False
         else:
-            new_level = self.env.thin_levels[index - 1]
+            new_level = thin_levels[index - 1]
 
         original_level = self.env.levels[node]
 

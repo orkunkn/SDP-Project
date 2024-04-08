@@ -1,3 +1,4 @@
+from collections import defaultdict
 
 class Constructor:
     
@@ -8,37 +9,30 @@ class Constructor:
     def calculate_graph_metrics(self):
 
         self.env.total_nodes = self.env.G.number_of_nodes()
-        self.env.indegree_dict = {node: self.env.G.in_degree(node) for node in self.env.G.nodes()}
+        self.env.indegree_dict = dict(self.env.G.in_degree())
 
-        self.env.level_costs = {}
-        self.env.node_count_per_level = {}
+        self.env.level_costs = defaultdict(int)
+        self.env.node_count_per_level = defaultdict(int)
+
         total_cost = 0
-        
-        # Process each node and level
+
         for node, level in self.env.levels.items():
             indegree = self.env.indegree_dict[node]
             cost = max(0, 2 * indegree - 1)
-
-            if level in self.env.level_costs:
-                self.env.level_costs[level] += cost
-            else:
-                self.env.level_costs[level] = cost
+            
+            # Update the level cost and total cost
+            self.env.level_costs[level] += cost
             total_cost += cost
+            
+            # Increment the node count for the level
+            self.env.node_count_per_level[level] += 1
 
-            # Count nodes in every level
-            if level in self.env.node_count_per_level:
-                self.env.node_count_per_level[level] += 1
-            else:
-                self.env.node_count_per_level[level] = 1
-
-
-        max_level = max(self.env.levels.values()) + 1
+        level_count = max(self.env.levels.values(), default=0) + 1
         total_parents = sum(self.env.indegree_dict.values())
 
-        # Compute the 3 criteria
         self.env.AIR = total_parents / self.env.total_nodes if self.env.total_nodes else 0
-        self.env.ARL = self.env.total_nodes / max_level if self.env.levels else 0
-        self.env.ALC = total_cost / max_level if max_level > 0 else 0
+        self.env.ARL = self.env.total_nodes / level_count if self.env.levels else 0
+        self.env.ALC = total_cost / level_count if level_count > 0 else 0
     
 
     def generate_info_text(self):
