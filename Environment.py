@@ -8,8 +8,9 @@ import time
 import json
 import os
 
-MAX_ACTION_SPACE = 115000
-MAX_OBS_SPACE = MAX_ACTION_SPACE * 2
+MAX_ACTION_SPACE = 114901
+MAX_OBS_SPACE = MAX_ACTION_SPACE * 2 + 1
+# pwtk thin level sayısı = 114901 (max thin level)
 
 class GraphEnv(gym.Env):
 
@@ -32,6 +33,12 @@ class GraphEnv(gym.Env):
         self.part_3_total = 0
         self.matrix = matrix
 
+        # A discrete action space. Nodes in thin levels will be chosen.
+        self.action_space = gym.spaces.Discrete(MAX_ACTION_SPACE)
+
+        # Observation space contains nodes' levels and indegrees which are in thin levels.
+        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(MAX_OBS_SPACE,), dtype=np.int64)
+
         # Clear the log file at the start of each run
         open("logfile.json", "w").close()
         
@@ -45,17 +52,13 @@ class GraphEnv(gym.Env):
         if agent_choice in self.nodes_in_thin_levels_mapping:
             node_to_move = self.nodes_in_thin_levels_mapping[agent_choice]
         
-        # If node is previously moved and not in a thin level anymore
+        # If the chosen node does not exist or not in a thin level
         else:
             reward = -100
 
             terminated = False
 
-            # Convert object to a list
-            data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-            
-            # Convert list to an array
-            observation = np.array(data)
+            observation = self.current_observation
 
             # Returns observation, reward, done (always False), truncated (unnecessary so always False) and info.
             return observation, reward, terminated, False, {}
@@ -67,7 +70,7 @@ class GraphEnv(gym.Env):
         source_node_count = self.node_count_per_level[old_node_level]
 
         # Move the node one level upper
-        is_node_moved = self.actions.move_node_to_higher_level_thin(node_to_move)
+        is_node_moved = self.actions.move_node_to_higher_level(node_to_move)
 
         if is_node_moved:
             # Metrics are updated after movement.
@@ -79,11 +82,7 @@ class GraphEnv(gym.Env):
         # Learning is done if there is one or zero thin level left.
         terminated = (len(self.thin_levels) <= 1) or (len(self.thin_levels) == 2 and max(self.levels.values()) == 1)
 
-        # Convert object to a list
-        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-        
-        # Convert list to an array
-        observation = np.array(data)
+        observation = self.create_observation()
 
         end_time = time.perf_counter()
         self.total_step_time += end_time - start_time
@@ -162,8 +161,30 @@ class GraphEnv(gym.Env):
         self.part_1_total = 0
         self.part_2_total = 0
         self.part_3_total = 0
-    
 
+
+    def create_observation(self):
+        # Combine the levels and indegrees of nodes from the graph into a single list
+        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
+        
+        # Convert the combined data into a numpy array of type int64
+        observation_data = np.array(data, dtype=np.int64)
+        
+        # Increase each element by the number of levels to adjust the scale
+        observation_data = np.append(observation_data, len(self.levels_of_nodes_in_thin.values()))
+        
+        # Initialize a padded array with zeros to match the maximum observation space size
+        padded_observation = np.zeros(MAX_OBS_SPACE, dtype=np.int64)
+        
+        # Copy the observation data into the padded array
+        padded_observation[:len(observation_data)] = observation_data
+
+        self.current_observation = padded_observation
+        
+        # Return the padded observation array
+        return self.current_observation
+
+    
     # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None):
 
@@ -172,19 +193,14 @@ class GraphEnv(gym.Env):
         # A dictionary mapping each node to its level.
         self.levels = {}
 
-        # A dictionary mapping each node to its parent node.
-        self.node_parents = {}
-
         # A node counter for every level.
         self.node_count_per_level = {}
 
+        # An indegree dictionary for every node
         self.indegree_dict = {}
 
         # A dictionary for cost of every level
         self.level_costs = {}
-
-        # Number of total nodes in graph
-        self.total_nodes = 0
 
         # Nodes in thin levels (starting from 0) and their mapping to their actual number {0: actual_node_number, 1: actual_node_number...}
         self.nodes_in_thin_levels_mapping = {}
@@ -213,16 +229,7 @@ class GraphEnv(gym.Env):
 
         self.levels_of_nodes_in_thin, self.indegrees_of_nodes_in_thin = self.constructor.init_levels_of_nodes_in_thin()
 
-        # A discrete action space. Nodes in thin levels will be chosen.
-        # Action and observation spaces are determined according to matrix.
-        self.action_space = gym.spaces.Discrete(len(self.nodes_in_thin_levels_mapping), start=list(self.levels_of_nodes_in_thin.keys())[0])
-
-        # Observation space contains nodes' levels and indegrees which are in thin levels.
-        self.observation_space = gym.spaces.Box(low=0, high=1000000, shape=(len(self.levels_of_nodes_in_thin) + len(self.indegrees_of_nodes_in_thin),), dtype=np.int64)
-        # pwtk thin level sayısı = 114901 (max thin level)
-
-        data = list(self.levels_of_nodes_in_thin.values()) + list(self.indegrees_of_nodes_in_thin.values())
-        observation = np.array(data)
+        observation = self.create_observation()
         
         return observation, {}
     

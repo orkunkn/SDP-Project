@@ -1,6 +1,6 @@
 from mtx_to_array import mtx_to_array
 from stable_baselines3 import PPO
-from Environment_thin import GraphEnv
+from Environment import GraphEnv
 import os
 
 """
@@ -12,7 +12,6 @@ if not os.path.exists(models_dir):
 
 matrix = mtx_to_array("mtx_files/bcsstk17.mtx")
 env = GraphEnv(matrix)
-env.reset() # Has to be called before every learn
 
 """
 # To load and use a previously educated model

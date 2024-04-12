@@ -5,22 +5,7 @@ class Actions:
         self.env = environment
 
 
-    def move_node_to_higher_level_thick(self, node, levels_to_drop):
-        original_level = self.env.levels[node]
-        new_level = original_level - levels_to_drop
-
-        if node not in self.env.G.nodes() or new_level < 0 or levels_to_drop == 0:
-            return False
-        
-        for i in range(1, levels_to_drop + 1):
-            self.env.levels[node] -= 1  # Move node 1 level
-            self.update_graph_after_movement(node, original_level - i)
-
-        self.remove_empty_level(original_level)
-        return True
-
-
-    def move_node_to_higher_level_thin(self, node):
+    def move_node_to_higher_level(self, node):
 
         if node not in self.env.G.nodes():
             return False

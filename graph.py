@@ -19,12 +19,6 @@ class Graph:
                 self.env.G.add_edge(col, row)
                 self.env.levels[row] = max(self.env.levels[row], self.env.levels[col] + 1)
 
-                # Add or update the parent list for each node
-                if row in self.env.node_parents:
-                    self.env.node_parents[row].append(col)
-                else:
-                    self.env.node_parents[row] = [col]
-
 
         """ Graph drawing function """
     def draw_graph(self, info_text="",name=""):

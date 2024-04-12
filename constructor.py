@@ -8,7 +8,7 @@ class Constructor:
     """ Calculate and store graph metrics. """
     def calculate_graph_metrics(self):
 
-        self.env.total_nodes = self.env.G.number_of_nodes()
+        total_nodes = self.env.G.number_of_nodes()
         self.env.indegree_dict = dict(self.env.G.in_degree())
 
         self.env.level_costs = defaultdict(int)
@@ -30,8 +30,8 @@ class Constructor:
         level_count = max(self.env.levels.values(), default=0) + 1
         total_parents = sum(self.env.indegree_dict)
 
-        self.env.AIR = total_parents / self.env.total_nodes if self.env.total_nodes else 0
-        self.env.ARL = self.env.total_nodes / level_count if self.env.levels else 0
+        self.env.AIR = total_parents / total_nodes if total_nodes else 0
+        self.env.ARL = total_nodes / level_count if self.env.levels else 0
         self.env.ALC = total_cost / level_count if level_count > 0 else 0
 
         self.env.nodes_in_thin_levels_mapping = self.find_nodes_in_thin_levels()
@@ -72,7 +72,7 @@ class Constructor:
     def generate_info_text(self):
         """ Generate information text about the graph metrics. """
         return (
-            f"Total Nodes: {self.env.total_nodes}\n"
+            f"Total Nodes: {self.env.G.number_of_nodes()}\n"
             f"Total Levels: {max(self.env.levels.values()) + 1}\n"
             f"Indegree of Each Node: {self.env.indegree_dict}\n"
             f"Average Indegree per Row (AIR): {self.env.AIR:.2f}\n"
