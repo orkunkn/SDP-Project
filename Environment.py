@@ -35,7 +35,7 @@ class GraphEnv(gym.Env):
         self.action_space = gym.spaces.MultiDiscrete([MAX_ACTION_SPACE + 1, 2])
 
         # Observation space contains nodes' levels and indegrees which are in thin levels and how many nodes left to move.
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(MAX_OBS_SPACE,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(MAX_OBS_SPACE,), dtype=np.float32)
 
         # Clear the log file at the start of each run
         open("logfile.json", "w").close()
@@ -110,7 +110,7 @@ class GraphEnv(gym.Env):
             part_1 = self.S * self.k1 * 10**(-source_node_count * self.h1)
 
             # How long did node move (further move --> bigger penalty)
-            part_2 = (-1/self.S) * self.k2 * (old_node_level - self.node_levels[node])
+            part_2 = (-1/self.S) * self.k2 * (old_node_level - self.initial_node_levels[node])
 
             # Level cost comparison
             if new_level_cost < self.ALC:
@@ -207,6 +207,9 @@ class GraphEnv(gym.Env):
 
         # A dictionary mapping each node to its level {node: level}
         self.node_levels = {}
+
+        # Used to see how far did a node moved from its initial level
+        self.initial_node_levels = {}
 
         # A node counter for every level.
         self.node_count_per_level = {}
