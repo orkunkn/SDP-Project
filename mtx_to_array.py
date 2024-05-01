@@ -6,7 +6,7 @@ def mtx_to_array(file_name):
     sparse_matrix = scipy.io.mmread(mtx_file)
 
     # Extract the upper triangular part of the matrix
-    lower_triangular = scipy.sparse.tril(sparse_matrix)
+    lower_triangular = scipy.sparse.tril(sparse_matrix, -1)
     # Convert to CSR format
     lower_triangular = lower_triangular.tocsr()
 

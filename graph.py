@@ -19,15 +19,15 @@ class Graph:
                 self.env.G.add_edge(col, row)
                 self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
 
-        self.env.initial_node_levels = self.env.node_levels
+        self.env.initial_node_levels = self.env.node_levels.copy()
+
         self.env.node_count_per_level = defaultdict(int)
         self.env.level_costs = defaultdict(int)
-        self.env.indegree_dict = dict(self.env.G.in_degree())
 
         self.env.total_nodes = self.env.G.number_of_nodes()
         
         for node, level in self.env.node_levels.items():
-            indegree = self.env.indegree_dict[node]
+            indegree = self.env.G.in_degree(node)
             cost = max(0, 2 * indegree - 1)
             
             # Update the level cost and total cost

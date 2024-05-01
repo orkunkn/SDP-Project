@@ -19,8 +19,13 @@ model_path = f"{models_dir}/PPO.zip"
 # model = PPO.load(model_path, env=env)
 
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=100000)
+model = PPO("MlpPolicy", env, verbose=1,
+            learning_rate=2.5e-4,
+            clip_range=0.25,
+            ent_coef=0.01)
+
+# model = PPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=2048*100)
 
 
 # env.render()
