@@ -1,4 +1,6 @@
 *.json
 mtx_files
 models
+new
+matrices.txt
 __pycache__

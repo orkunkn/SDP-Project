@@ -17,13 +17,25 @@ class Constructor:
 
         self.find_thin_levels()
 
-    
+    """
+    def initial_find_thin_levels(self):
+        self.env.first_AIR = self.env.AIR
+        self.env.first_ARL = self.env.ARL
+        self.env.first_ALC = self.env.ALC
+        
+        # Find thin levels
+        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items()
+                                if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC]
+
+        self.env.thin_levels.sort()
+    """
+
     def find_thin_levels(self):
         # Find thin levels
-        self.env.thin_levels = {level for level, node_count in self.env.node_count_per_level.items()
-                    if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC}
-        
-        self.env.thin_levels_mapping = {index: level for index, level in enumerate(self.env.thin_levels)}
+        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items()
+                                if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC]
+
+        self.env.thin_levels.sort()
 
 
     def generate_info_text(self):

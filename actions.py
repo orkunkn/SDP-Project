@@ -1,4 +1,3 @@
-from bisect import bisect_left
 
 class Actions:
     
@@ -11,25 +10,22 @@ class Actions:
         if node not in self.env.G.nodes():
             return False
 
-        # Sort thin_levels each time this method is called
-        thin_levels_sorted = sorted(self.env.thin_levels)
-        
         original_level = self.env.node_levels.get(node)
         if original_level is None:
             return False
-        
+
         # Using bisect to find the correct insertion point and then adjust by one to move up
-        pos = bisect_left(thin_levels_sorted, original_level)
-        if pos == 0 or thin_levels_sorted[pos] != original_level:
-            # Node level is already the highest or not found exactly in list (bisect_left might find insertion point)
+        index = self.env.thin_levels.index(original_level)
+        if index == 0:
             return False
 
-        new_level = thin_levels_sorted[pos - 1]
+        new_level = self.env.thin_levels[index - 1]
         indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * indegree - 1)
         
         while self.env.node_levels[node] != new_level:
             self.env.node_levels[node] -= 1 # Move node 1 level
+            self.env.avg_move += 1
             self.update_graph_after_movement(node, self.env.node_levels.get(node))
             
         indegree = self.env.G.in_degree(node)
@@ -54,6 +50,7 @@ class Actions:
             return False
         
         self.env.node_levels[node] -= 1 # Move node 1 level
+        self.env.avg_move += 1
 
         indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * indegree - 1)

@@ -43,9 +43,9 @@ class Graph:
         pos = {node: (node, -level) for node, level in self.env.node_levels.items()}
         plt.figure(figsize=(10, 8)) 
 
-        nx.draw_networkx_nodes(self.env.G, pos, node_size=80)
-        nx.draw_networkx_edges(self.env.G, pos, edgelist=self.env.G.edges(), edge_color='black', arrows=True, arrowsize=5, width=0.45)
-        nx.draw_networkx_labels(self.env.G, pos, font_size=7, font_family="sans-serif")
+        nx.draw_networkx_nodes(self.env.G, pos, node_size=70)
+        nx.draw_networkx_edges(self.env.G, pos, edgelist=self.env.G.edges(), edge_color='black', arrows=True, arrowsize=4, width=0.2)
+        nx.draw_networkx_labels(self.env.G, pos, font_size=5, font_family="sans-serif")
 
         plt.text(0.005, 0.005, info_text, transform=plt.gca().transAxes, fontsize=13.5) 
 
