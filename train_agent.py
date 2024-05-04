@@ -12,7 +12,7 @@ models_dir = "models/PPO"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-matrix = mtx_to_array("new/gd97_a.mtx")
+matrix = mtx_to_array("current_model_mtx/gd97_a.mtx")
 
 env = GraphEnv(matrix)
 

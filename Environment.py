@@ -8,15 +8,6 @@ import time
 import json
 import os
 
-# (ignoring pwtk, Si41Ge41H72)
-# 2309
-"""
-MAX_ACTION_SPACE = 6765
-MAX_OBS_SPACE = 14843 + 3
-
-# Used for normalizing obs space
-SCALE_NUM = 7032
-"""
 MAX_ACTION_SPACE = 88
 MAX_OBS_SPACE = 266 + 3
 
@@ -118,7 +109,7 @@ class GraphEnv(gym.Env):
         
         if terminated:
             self.log_info(info)
-            #self.render()
+            # self.render()
         
         # Returns observation, reward, terminated (is there any thin levels left), truncated (unnecessary so always False) and info.
         return observation, reward, terminated, False, info
@@ -290,10 +281,6 @@ class GraphEnv(gym.Env):
         observation = self.create_observation()
 
         self.S = max(self.node_levels.values()) / MAX_ACTION_SPACE 
-        
-
-        #self.render()
-        
 
         return observation, {}
     

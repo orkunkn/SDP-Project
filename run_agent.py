@@ -5,17 +5,15 @@ from Environment import GraphEnv
 import os
 
 def mask_fn(env):
-    return env.valid_action_mask()
+    return env.unwrapper.valid_action_mask()
 
 models_dir = "models/PPO"
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-# gd97_a
-# ex1
-# fs_183_6
-matrix = mtx_to_array("new/fs_183_6.mtx")
+matrix = mtx_to_array("current_model_mtx/gd97_a.mtx")
+#matrix = mtx_to_array("mtx_files/new/bcspwr04.mtx")
 
 env = GraphEnv(matrix)
 
@@ -28,7 +26,7 @@ model = MaskablePPO.load(model_path, env=env)
 # Initialize the environment and get the starting observation
 observation, _ = env.reset()
 env.render()
-print("AIR", env.AIR, "ARL", env.ARL, "ALC:", env.ALC)
+print("First; AIR:", env.unwrapped.AIR, "ARL", env.unwrapped.ARL, "ALC:", env.unwrapped.ALC)
 # Number of steps to run
 num_steps = 1000
 for step in range(num_steps):
@@ -37,7 +35,7 @@ for step in range(num_steps):
     
     # Render the environment
     if done:
-        print("AIR:", env.AIR, "ARL", env.ARL, "ALC:", env.ALC)
+        print("AIR:", env.unwrapped.AIR, "ARL", env.unwrapped.ARL, "ALC:", env.unwrapped.ALC)
         env.render()
         break
         # observation, _ = env.reset()
