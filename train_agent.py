@@ -12,7 +12,7 @@ models_dir = "models/PPO"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-matrix = mtx_to_array("current_model_mtx/gd97_a.mtx")
+matrix = mtx_to_array("mtx_files/bcsstk17.mtx")
 
 env = GraphEnv(matrix)
 
@@ -20,13 +20,13 @@ env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
 # To load and use a previously educated model
 model_path = f"{models_dir}/MaskablePPO_medium.zip"
-model = MaskablePPO.load(model_path, env=env)
+#model = MaskablePPO.load(model_path, env=env)
 
-#model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00025, n_steps=16)
+model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00025, n_steps=2048)
 
 model.learn(total_timesteps=2048*2)
 
 # env.render()
 
 # To save the model after learning
-model.save(f"{models_dir}/MaskablePPO_medium")
+#model.save(f"{models_dir}/MaskablePPO_new")

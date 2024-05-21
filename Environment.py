@@ -7,10 +7,12 @@ import networkx as nx
 import time
 import json
 import os
+from math import exp as e
+from torch.distributions import Distribution
+Distribution.set_default_validate_args(False)
 
-MAX_ACTION_SPACE = 88
-MAX_OBS_SPACE = 266 + 3
-
+MAX_ACTION_SPACE = 6764
+MAX_OBS_SPACE = 20294 + 3
 # Used for normalizing obs space
 SCALE_NUM = 10000
 
@@ -33,7 +35,6 @@ class GraphEnv(gym.Env):
 
         # A multi discrete action space. Nodes in thin levels will be chosen.
         # First action is level and second action is the action (move to next level or move to next thin level)
-        # self.action_space = gym.spaces.MultiDiscrete([MAX_ACTION_SPACE, 2])
         self.action_space = gym.spaces.Discrete(MAX_ACTION_SPACE * 2)
 
         # Observation space contains thin levels, level details and average values in graph
@@ -45,7 +46,7 @@ class GraphEnv(gym.Env):
     
     def valid_action_mask(self):
         # Initialize the action mask array
-        action_masks = np.zeros(MAX_ACTION_SPACE * 2, dtype=int)
+        action_masks = np.zeros(MAX_ACTION_SPACE * 2, dtype=bool)
 
         # Set valid masks for the first action based on thin_levels
         for i in self.thin_levels:
@@ -59,11 +60,8 @@ class GraphEnv(gym.Env):
 
     def step(self, action):
 
-        # Node and action are chosen by agent.
-        agent_choice_level = action
-
         # Move the node to the next thin level
-        if agent_choice_level < MAX_ACTION_SPACE:
+        if action < MAX_ACTION_SPACE:
             move_action = "thin"
 
         # Move the node to the next level
@@ -71,11 +69,11 @@ class GraphEnv(gym.Env):
             move_action = "normal"
         
         start_time = time.perf_counter()
-        if agent_choice_level > max(self.node_levels.values()):
-            agent_choice_level = MAX_ACTION_SPACE * 2 - 1 - agent_choice_level
+        if action > max(self.node_levels.values()):
+            action = MAX_ACTION_SPACE * 2 - 1 - action
             
         for node, level in self.node_levels.items():
-            if level == agent_choice_level:
+            if level == action:
                 node_to_move = node
 
         # Keep the old values for reward comparison
@@ -94,11 +92,11 @@ class GraphEnv(gym.Env):
         if is_node_moved:
             self.constructor.calculate_graph_metrics()
 
+        # reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
         reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
         self.total_reward += reward
 
         # Learning is done if no thin levels are left.
-        # terminated = len(self.thin_levels) == 0 or (len(self.thin_levels) == 1 and self.thin_levels_mapping.get(0) == 0)
         terminated = len(self.thin_levels) == 0 or (len(self.thin_levels) == 1 and self.thin_levels[0] == 0)
 
         observation = self.create_observation()
@@ -107,9 +105,8 @@ class GraphEnv(gym.Env):
         self.total_step_time += end_time - start_time
         self.time_step += 1
         
-        if terminated:
+        if terminated or self.time_step % self.check_count == 0:
             self.log_info(info)
-            # self.render()
         
         # Returns observation, reward, terminated (is there any thin levels left), truncated (unnecessary so always False) and info.
         return observation, reward, terminated, False, info
@@ -129,7 +126,7 @@ class GraphEnv(gym.Env):
             part_1 = self.S * self.k1 * 10**(-source_node_count * self.h1)
 
             # How long did node move (further move --> bigger penalty)
-            part_2 = -self.S * self.k2 * (self.initial_node_levels.get(node) - new_node_level)
+            part_2 = -self.S * self.k2 * self.node_move_count.get(node)
 
             # Level cost comparison
             if new_level_cost < self.ALC:
@@ -152,18 +149,55 @@ class GraphEnv(gym.Env):
 
         return total_reward, info
     
+    """
+    def new_reward(self, node, old_node_level, source_node_count):
+        k1 = -1
+        k2 = 10
+        h1 = 0.15
+        h2 = -0.5
+        h3 = -4
+
+        new_node_level = self.node_levels.get(node)
+        if new_node_level == old_node_level:
+            total_reward = -50
+        else:
+            node_moved_level = self.node_move_count.get(node)
+            source_node_count -= 1
+
+            part_1 = 15 * e(h3 * source_node_count / self.ARL) - 5
+
+            if node_moved_level > 40:
+                part_2 = -100
+            elif node_moved_level > 10:
+                part_2 = k1 * e(h1 * (node_moved_level - 10)) + 1
+            else:
+                part_2 = k2 * e(h2 * (node_moved_level - 1))
+                
+            # Used for logging
+            self.part_1_total += part_1
+            self.part_2_total += part_2
+
+            total_reward = part_1 + part_2
+
+        info = {
+            "ALC": round(self.ALC, 3),
+            "ARL": round(self.ARL, 3),
+            "AIR": round(self.AIR, 3)
+        }
+
+        return total_reward, info
+
+    """
+    
     # Used for logging info into a JSON file. Check count can be updated in init
     def log_info(self, info):
         
-        #if self.time_step % self.check_count != 0:
-        #    return
-        
-        avg_reward = self.total_reward / self.time_step
-        avg_step_time = self.total_step_time / self.time_step
-        avg_part_1 = self.part_1_total / self.time_step
-        avg_part_2 = self.part_2_total / self.time_step
-        avg_part_3 = self.part_3_total / self.time_step
-        self.avg_move = self.avg_move / self.time_step
+        avg_reward = self.total_reward / self.check_count
+        avg_step_time = self.total_step_time / self.check_count
+        avg_part_1 = self.part_1_total / self.check_count
+        avg_part_2 = self.part_2_total / self.check_count
+        avg_part_3 = self.part_3_total / self.check_count
+        self.avg_move = self.avg_move / self.check_count
 
         new_log_entry = {
             "time_step": self.time_step,
@@ -180,13 +214,13 @@ class GraphEnv(gym.Env):
         log_file_path = "logfile.json"
         log_data = []
         if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0:
-            with open(log_file_path, "r") as f:
-                log_data = json.load(f)
+           with open(log_file_path, "r") as f:
+               log_data = json.load(f)
 
         log_data.append(new_log_entry)
 
         with open(log_file_path, "w") as f:
-            json.dump(log_data, f, indent=4)
+             json.dump(log_data, f, indent=4)
 
         self.total_step_time = 0
         self.total_reward = 0
@@ -205,11 +239,6 @@ class GraphEnv(gym.Env):
 
         # Combine the levels and indegrees of nodes from the graph into a single list
         data = padded_levels + list(self.node_count_per_level.values()) + list(self.level_costs.values())
-        """
-        print("action:", len(self.thin_levels))
-        print("max level:", max(self.node_levels.values()))
-        print("obs:", len(self.thin_levels + list(self.node_count_per_level.values()) + list(self.level_costs.values())))
-        """
 
         # Convert the combined data into a numpy array
         observation_data = np.array(data, dtype=np.float32)
@@ -241,8 +270,7 @@ class GraphEnv(gym.Env):
         # A dictionary mapping each node to its level {node: level}
         self.node_levels = {}
 
-        # Used to see how far did a node moved from its initial level
-        self.initial_node_levels = {}
+        self.node_move_count = {}
 
         # A node counter for every level.
         self.node_count_per_level = {}

@@ -13,14 +13,13 @@ if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
 matrix = mtx_to_array("current_model_mtx/gd97_a.mtx")
-#matrix = mtx_to_array("mtx_files/new/bcspwr04.mtx")
 
 env = GraphEnv(matrix)
 
 env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
 # To load and use a previously educated model
-model_path = f"{models_dir}/MaskablePPO_medium.zip"
+model_path = f"{models_dir}/MaskablePPO_new.zip"
 model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation

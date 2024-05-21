@@ -7,14 +7,8 @@ class Actions:
 
     def move_node_to_next_thin_level(self, node):
 
-        if node not in self.env.G.nodes():
-            return False
-
         original_level = self.env.node_levels.get(node)
-        if original_level is None:
-            return False
 
-        # Using bisect to find the correct insertion point and then adjust by one to move up
         index = self.env.thin_levels.index(original_level)
         if index == 0:
             return False
@@ -22,6 +16,7 @@ class Actions:
         new_level = self.env.thin_levels[index - 1]
         indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * indegree - 1)
+        node_move = self.env.node_levels[node] - new_level
         
         while self.env.node_levels[node] != new_level:
             self.env.node_levels[node] -= 1 # Move node 1 level
@@ -35,6 +30,7 @@ class Actions:
         self.env.level_costs[new_level] += new_cost
         self.env.node_count_per_level[original_level] -= 1
         self.env.node_count_per_level[new_level] += 1
+        self.env.node_move_count[node] += node_move
 
         self.remove_empty_level(original_level)
 
@@ -42,11 +38,9 @@ class Actions:
 
 
     def move_node_to_next_level(self, node):
-        if node not in self.env.G.nodes():
-            return False
         
         original_level = self.env.node_levels.get(node)
-        if original_level is None or original_level == 0:
+        if original_level == 0:
             return False
         
         self.env.node_levels[node] -= 1 # Move node 1 level
@@ -64,6 +58,7 @@ class Actions:
         self.env.level_costs[original_level - 1] += new_cost
         self.env.node_count_per_level[original_level] -= 1
         self.env.node_count_per_level[original_level - 1] += 1
+        self.env.node_move_count[node] += 1
 
         self.remove_empty_level(original_level)
         return True
