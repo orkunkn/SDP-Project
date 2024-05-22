@@ -1,4 +1,4 @@
-
+import numpy as np
 class Actions:
     
     def __init__(self, environment):
@@ -9,19 +9,19 @@ class Actions:
 
         original_level = self.env.node_levels.get(node)
 
-        index = self.env.thin_levels.index(original_level)
+        index = np.where(self.env.thin_levels == original_level)[0][0]
+
         if index == 0:
             return False
 
         new_level = self.env.thin_levels[index - 1]
         indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * indegree - 1)
-        node_move = self.env.node_levels[node] - new_level
         
-        while self.env.node_levels[node] != new_level:
+        while original_level != new_level:
             self.env.node_levels[node] -= 1 # Move node 1 level
-            self.env.avg_move += 1
-            self.update_graph_after_movement(node, self.env.node_levels.get(node))
+            original_level -= 1 # Used as new level in loop
+            self.update_graph_after_movement(node, original_level)
             
         indegree = self.env.G.in_degree(node)
         new_cost = max(0, 2 * indegree - 1)
@@ -30,7 +30,8 @@ class Actions:
         self.env.level_costs[new_level] += new_cost
         self.env.node_count_per_level[original_level] -= 1
         self.env.node_count_per_level[new_level] += 1
-        self.env.node_move_count[node] += node_move
+        self.env.node_move_count[node] += (original_level - new_level)
+        self.env.avg_move += (original_level - new_level)
 
         self.remove_empty_level(original_level)
 

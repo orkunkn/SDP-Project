@@ -1,4 +1,4 @@
-from mtx_to_array import mtx_to_array
+from mtx_conversions import mtx_to_array, graph_to_mtx
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from Environment import GraphEnv
@@ -12,14 +12,15 @@ models_dir = "models/PPO"
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-matrix = mtx_to_array("current_model_mtx/gd97_a.mtx")
+mtx_name = "GD96_c"
+matrix = mtx_to_array(f"mtx_files/new/{mtx_name}.mtx")
 
 env = GraphEnv(matrix)
 
 env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
 # To load and use a previously educated model
-model_path = f"{models_dir}/MaskablePPO_new.zip"
+model_path = f"{models_dir}/PPO.zip"
 model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation
@@ -35,6 +36,7 @@ for step in range(num_steps):
     # Render the environment
     if done:
         print("AIR:", env.unwrapped.AIR, "ARL", env.unwrapped.ARL, "ALC:", env.unwrapped.ALC)
+        graph_to_mtx(env.G, f"{mtx_name}")
         env.render()
         break
         # observation, _ = env.reset()

@@ -1,4 +1,4 @@
-
+import numpy as np
 class Constructor:
     
     def __init__(self, environment):
@@ -20,10 +20,11 @@ class Constructor:
 
     def find_thin_levels(self):
         # Find thin levels
-        self.env.thin_levels = [level for level, node_count in self.env.node_count_per_level.items()
-                                if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC]
+        thin_levels = [level for level, node_count in self.env.node_count_per_level.items()
+                                if node_count < self.env.ARL and self.env.level_costs[level] < self.env.ALC * 1.3]
 
-        self.env.thin_levels.sort()
+        thin_levels.sort()
+        self.env.thin_levels = np.array(thin_levels, dtype=int)
 
 
     def generate_info_text(self):

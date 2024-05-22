@@ -11,10 +11,8 @@ from math import exp as e
 from torch.distributions import Distribution
 Distribution.set_default_validate_args(False)
 
-MAX_ACTION_SPACE = 6764
-MAX_OBS_SPACE = 20294 + 3
-# Used for normalizing obs space
-SCALE_NUM = 10000
+MAX_ACTION_SPACE = 182000
+MAX_OBS_SPACE = 550000
 
 class GraphEnv(gym.Env):
 
@@ -29,7 +27,7 @@ class GraphEnv(gym.Env):
         self.h3 = 0.08
 
         # Used for logging
-        self.check_count = 512
+        self.check_count = 64
 
         self.matrix = matrix
 
@@ -45,16 +43,12 @@ class GraphEnv(gym.Env):
         
     
     def valid_action_mask(self):
-        # Initialize the action mask array
         action_masks = np.zeros(MAX_ACTION_SPACE * 2, dtype=bool)
+        sa = MAX_ACTION_SPACE * 2 - 1
 
-        # Set valid masks for the first action based on thin_levels
-        for i in self.thin_levels:
-            action_masks[i] = 1
-            if self.thin_levels.index(i) == 0:
-                action_masks[i] = 0
-            reverse_index = MAX_ACTION_SPACE * 2 - 1 - i
-            action_masks[reverse_index] = 1
+        action_masks[self.thin_levels] = True
+        reverse_indices = sa - self.thin_levels
+        action_masks[reverse_indices] = True
 
         return action_masks
 
@@ -79,7 +73,7 @@ class GraphEnv(gym.Env):
         # Keep the old values for reward comparison
         old_node_level = self.node_levels.get(node_to_move)
         source_node_count = self.node_count_per_level.get(old_node_level)
-        
+
         # Move the node to the next thin level
         if move_action == "thin":
             is_node_moved = self.actions.move_node_to_next_thin_level(node_to_move)
@@ -232,36 +226,24 @@ class GraphEnv(gym.Env):
 
     def create_observation(self):
 
-        padded_levels = [0] * MAX_ACTION_SPACE
+        thin_levels_array = np.array(self.thin_levels, dtype=np.int32)
+        node_count_per_level_array = np.array(list(self.node_count_per_level.values()), dtype=np.int32)
+        level_costs_array = np.array(list(self.level_costs.values()), dtype=np.int32)
         
-        # Copy the observation data into the padded array
-        padded_levels[:len(self.thin_levels)] = self.thin_levels
+        combined_array = np.concatenate([thin_levels_array, node_count_per_level_array, level_costs_array])
 
-        # Combine the levels and indegrees of nodes from the graph into a single list
-        data = padded_levels + list(self.node_count_per_level.values()) + list(self.level_costs.values())
+        # Append additional scalar values and normalize
+        additional_data = np.array([self.AIR, self.ALC, self.ARL], dtype=np.float32)
+        full_data = np.concatenate([combined_array, additional_data])
+        full_data /= MAX_ACTION_SPACE
 
-        # Convert the combined data into a numpy array
-        observation_data = np.array(data, dtype=np.float32)
-        
-        # Increase each element by the number of levels to adjust the scale
-        observation_data = np.append(observation_data, [self.AIR, self.ALC, self.ARL])
-        
-        # Normalizing the array to have values between 0 and 1
-        scale_factor = 1 / SCALE_NUM
-        normalized_obs = scale_factor * observation_data
+        # Prepare the final observation array
+        observation = np.zeros(MAX_OBS_SPACE, dtype=np.float32)
+        observation[:len(full_data)] = full_data
 
-        # Initialize a padded array with zeros to match the maximum observation space size
-        padded_observation = np.zeros(MAX_OBS_SPACE, dtype=np.float32)
-        
-        # Copy the observation data into the padded array
-        padded_observation[:len(normalized_obs)] = normalized_obs
+        return observation
 
-        self.current_observation = padded_observation
 
-        # Return the padded observation array
-        return self.current_observation
-
-    
     # Used for reseting the environment. Do not change function inputs or return statement
     def reset(self, seed=None, options={}):
 
@@ -280,6 +262,8 @@ class GraphEnv(gym.Env):
 
         # Thin levels in graph
         self.thin_levels = []
+
+        self.total_nodes = 0
 
         # Updated in constructor
         self.AIR = 0
@@ -308,8 +292,8 @@ class GraphEnv(gym.Env):
 
         observation = self.create_observation()
 
-        self.S = max(self.node_levels.values()) / MAX_ACTION_SPACE 
-
+        self.S = max(self.node_levels.values()) / MAX_ACTION_SPACE
+        
         return observation, {}
     
 
