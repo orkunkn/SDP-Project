@@ -61,11 +61,10 @@ class GraphEnv(gym.Env):
         # Move the node to the next level
         else:
             move_action = "normal"
+            action = MAX_ACTION_SPACE * 2 - 1 - action
         
         start_time = time.perf_counter()
-        if action > max(self.node_levels.values()):
-            action = MAX_ACTION_SPACE * 2 - 1 - action
-            
+        
         for node, level in self.node_levels.items():
             if level == action:
                 node_to_move = node

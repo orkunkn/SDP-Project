@@ -25,18 +25,43 @@ model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation
 observation, _ = env.reset()
-env.render()
-print("First; AIR:", env.unwrapped.AIR, "ARL", env.unwrapped.ARL, "ALC:", env.unwrapped.ALC)
+# env.render()
+
+first_air = env.unwrapped.AIR
+first_arl = env.unwrapped.ARL
+first_alc = env.unwrapped.ALC
+first_total_cost = sum(env.unwrapped.level_costs.values())
+
 # Number of steps to run
 num_steps = 1000
 for step in range(num_steps):
-    action, _states = model.predict(observation, deterministic=True, action_masks=env.valid_action_mask())
+    action, _states = model.predict(observation, deterministic=True, action_masks=env.unwrapped.valid_action_mask())
     observation, reward, done, _, info = env.step(action)
     
     # Render the environment
     if done:
-        print("AIR:", env.unwrapped.AIR, "ARL", env.unwrapped.ARL, "ALC:", env.unwrapped.ALC)
-        graph_to_mtx(env.G, f"{mtx_name}")
-        env.render()
+        new_air = env.unwrapped.AIR
+        new_arl = env.unwrapped.ARL
+        new_alc = env.unwrapped.ALC
+        new_total_cost = sum(env.unwrapped.level_costs.values())
+
+        total_cost_change = ((new_total_cost - first_total_cost) / first_total_cost) * 100
+        air_change = ((new_air - first_air) / first_air) * 100
+        arl_change = ((new_arl - first_arl) / first_arl) * 100
+        alc_change = ((new_alc - first_alc) / first_alc) * 100
+
+        # Create a formatted table
+        print("-" * 47)
+        print("| {:<10} | {:<8} | {:<8} | {:<8} |".format("", "Before", "After", "Change"))
+        print("-" * 47)
+        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("AIR", first_air, new_air, air_change))
+        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("ARL", first_arl, new_arl, arl_change))
+        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("ALC", first_alc, new_alc, alc_change))
+        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("Total Cost", first_total_cost, new_total_cost, total_cost_change))
+        print("-" * 47)
+
+
+        graph_to_mtx(env.unwrapped.G, f"{mtx_name}")
+        # env.render()
         break
         # observation, _ = env.reset()

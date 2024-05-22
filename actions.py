@@ -8,6 +8,7 @@ class Actions:
     def move_node_to_next_thin_level(self, node):
 
         original_level = self.env.node_levels.get(node)
+        temp_level = original_level
 
         index = np.where(self.env.thin_levels == original_level)[0][0]
 
@@ -17,11 +18,11 @@ class Actions:
         new_level = self.env.thin_levels[index - 1]
         indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * indegree - 1)
-        
-        while original_level != new_level:
+
+        while temp_level != new_level:
             self.env.node_levels[node] -= 1 # Move node 1 level
-            original_level -= 1 # Used as new level in loop
-            self.update_graph_after_movement(node, original_level)
+            temp_level -= 1 # Used as new level in loop
+            self.update_graph_after_movement(node, temp_level)
             
         indegree = self.env.G.in_degree(node)
         new_cost = max(0, 2 * indegree - 1)
