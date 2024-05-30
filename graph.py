@@ -22,6 +22,7 @@ class Graph:
         self.env.node_move_count = defaultdict(int)
         self.env.node_count_per_level = defaultdict(int)
         self.env.level_costs = defaultdict(int)
+        self.env.level_indegrees = defaultdict(int)
 
         self.env.total_nodes = self.env.G.number_of_nodes()
         
@@ -34,6 +35,9 @@ class Graph:
 
             # Increment the node count for the level
             self.env.node_count_per_level[level] += 1
+
+            # Update the level indegrees
+            self.env.level_indegrees[level] += indegree
 
 
         """ Graph drawing function """

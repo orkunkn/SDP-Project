@@ -16,8 +16,8 @@ class Actions:
             return False
 
         new_level = self.env.thin_levels[index - 1]
-        indegree = self.env.G.in_degree(node)
-        first_cost = max(0, 2 * indegree - 1)
+        first_indegree = self.env.G.in_degree(node)
+        first_cost = max(0, 2 * first_indegree - 1)
 
         while temp_level != new_level:
             self.env.node_levels[node] -= 1 # Move node 1 level
@@ -31,8 +31,9 @@ class Actions:
         self.env.level_costs[new_level] += new_cost
         self.env.node_count_per_level[original_level] -= 1
         self.env.node_count_per_level[new_level] += 1
+        self.env.level_indegrees[original_level] -= first_indegree
+        self.env.level_indegrees[new_level] += indegree
         self.env.node_move_count[node] += (original_level - new_level)
-        self.env.avg_move += (original_level - new_level)
 
         self.remove_empty_level(original_level)
 
@@ -46,10 +47,9 @@ class Actions:
             return False
         
         self.env.node_levels[node] -= 1 # Move node 1 level
-        self.env.avg_move += 1
 
-        indegree = self.env.G.in_degree(node)
-        first_cost = max(0, 2 * indegree - 1)
+        first_indegree = self.env.G.in_degree(node)
+        first_cost = max(0, 2 * first_indegree - 1)
 
         self.update_graph_after_movement(node, original_level - 1)
             
@@ -60,6 +60,8 @@ class Actions:
         self.env.level_costs[original_level - 1] += new_cost
         self.env.node_count_per_level[original_level] -= 1
         self.env.node_count_per_level[original_level - 1] += 1
+        self.env.level_indegrees[original_level] -= first_indegree
+        self.env.level_indegrees[original_level - 1] += indegree
         self.env.node_move_count[node] += 1
 
         self.remove_empty_level(original_level)
@@ -87,14 +89,24 @@ class Actions:
 
 
     def remove_levels(self, level):
+        # Determine the maximum level
+        max_level = max(self.env.level_costs.keys())
+
         # Remove the specified level and shift all higher levels down by one
-        for i in range(level, max(self.env.level_costs.keys())):
+        for i in range(level, max_level):
             self.env.level_costs[i] = self.env.level_costs.get(i + 1)
             self.env.node_count_per_level[i] = self.env.node_count_per_level.get(i + 1)
+            self.env.level_indegrees[i] = self.env.level_indegrees.get(i + 1)
 
-        # Remove the last element that has now been duplicated
-        self.env.level_costs.pop(max(self.env.level_costs.keys()), None)
-        self.env.node_count_per_level.pop(max(self.env.node_count_per_level.keys()), None)
+        # Handle thin_levels separately if the condition is met
+        if len(self.env.thin_levels) < self.env.first_thin_level_count * 0.1:
+            self.env.thin_levels = self.env.thin_levels[self.env.thin_levels != level]
+            self.env.thin_levels[self.env.thin_levels > level] -= 1
+
+        # Remove the now redundant last entries from dictionaries
+        self.env.level_costs.pop(max_level, None)
+        self.env.node_count_per_level.pop(max_level, None)
+        self.env.level_indegrees.pop(max_level, None)
 
 
     def remove_empty_level(self, current_level):
