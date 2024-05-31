@@ -27,7 +27,7 @@ class GraphEnv(gym.Env):
         self.h3 = 10
 
         # Used for logging
-        self.check_count = 512
+        self.check_count = 2048
 
         self.matrix = matrix
 
@@ -44,11 +44,15 @@ class GraphEnv(gym.Env):
     
     def valid_action_mask(self):
         action_masks = np.zeros(MAX_ACTION_SPACE * 2, dtype=bool)
-        sa = MAX_ACTION_SPACE * 2 - 1
+        total_action = MAX_ACTION_SPACE * 2 - 1
 
-        action_masks[self.thin_levels] = True
-        reverse_indices = sa - self.thin_levels
+        action_masks[self.thin_levels[1:]] = True
+        reverse_indices = total_action - self.thin_levels
         action_masks[reverse_indices] = True
+
+        # if first level is thin level, mask it
+        action_masks[0] = False
+        action_masks[total_action] = False
 
         return action_masks
 
@@ -64,77 +68,78 @@ class GraphEnv(gym.Env):
             action = MAX_ACTION_SPACE * 2 - 1 - action
         
         start_time = time.perf_counter()
-        
+
         for node, level in self.node_levels.items():
             if level == action:
                 node_to_move = node
                 break
-
+            
         # Keep the old values for reward comparison
         old_node_level = self.node_levels.get(node_to_move)
         source_node_count = self.node_count_per_level.get(old_node_level)
 
         # Move the node to the next thin level
         if move_action == "thin":
-            is_node_moved = self.actions.move_node_to_next_thin_level(node_to_move)
+            self.thin_move_count += 1
+            self.actions.move_node_to_next_thin_level(node_to_move)
 
         # Move the node to the next level
         else:
-            is_node_moved = self.actions.move_node_to_next_level(node_to_move)
+            self.normal_move_count += 1
+            self.actions.move_node_to_next_level(node_to_move)
 
-        # Metrics are updated if node is moved to another level.
-        if is_node_moved:
-            self.constructor.calculate_graph_metrics()
+        # Metrics are updated after move.
+        self.constructor.calculate_graph_metrics()
 
-        reward, info = self.calculate_reward(node_to_move, old_node_level, source_node_count)
+        reward, info = self.calculate_reward(node_to_move, source_node_count)
         self.total_reward += reward
 
-        # Learning is done if no thin levels are left.
-        self.terminated = len(self.thin_levels) == 0 or (len(self.thin_levels) == 1 and self.thin_levels[0] == 0)
-
+        # Learning is done if no thin levels are left or last thin level is the upmost level.
+        thin_levels_len = len(self.thin_levels)
+        if thin_levels_len <= 1:
+            if thin_levels_len == 0 or self.thin_levels[0] == 0:
+                self.terminated = True
+        
         observation = self.create_observation()
 
         end_time = time.perf_counter()
         self.total_step_time += end_time - start_time
         self.time_step += 1
 
-        #if self.terminated or self.time_step % self.check_count == 0:
-        #    self.log_info(info)
+        if self.terminated or self.time_step % self.check_count == 0:
+            self.log_info(info)
         
         # Returns observation, reward, terminated (is there any thin levels left), truncated (unnecessary so always False) and info.
         return observation, reward, self.terminated, False, info
 
     
-    def calculate_reward(self, node, old_node_level, source_node_count):
+    def calculate_reward(self, node, source_node_count):
 
         new_node_level = self.node_levels.get(node)
 
-        if new_node_level == old_node_level:
-            total_reward = -30
+        node_moved_level = self.node_move_count.get(node)
+        source_node_count -= 1
+
+        part_1 = self.k1 * 10**(-source_node_count * self.h1 / self.ARL)
+
+        if node_moved_level <= 20:
+            part_2 = - (self.k2 / 729) * (node_moved_level - 10)**3
         else:
-            node_moved_level = self.node_move_count.get(node)
-            source_node_count -= 1
+            part_2 = -15
 
-            part_1 = self.k1 * 10**(-source_node_count * self.h1 / self.ARL)
+        part_3 = -self.h3 * (self.level_costs.get(new_node_level) / self.ALC - 1)**2 + self.k3
 
-            if node_moved_level <= 20:
-                part_2 = - (self.k2 / 729) * (node_moved_level - 10)**3
-            else:
-                part_2 = -15
+        # Used for logging
+        self.part_1_total += part_1
+        self.part_2_total += part_2
+        self.part_3_total += part_3
 
-            part_3 = -self.h3 * (self.level_costs.get(new_node_level) / self.ALC - 1)**2 + self.k3
-
-            # Used for logging
-            self.part_1_total += part_1
-            self.part_2_total += part_2
-            self.part_3_total += part_3
-
-            total_reward = part_1 + part_2 + part_3
+        total_reward = part_1 + part_2 + part_3
 
         info = {
-            "ALC": round(self.ALC, 3),
-            "ARL": round(self.ARL, 3),
-            "AIL": round(self.AIL, 3)
+            "ALC": round(self.ALC, 1),
+            "ARL": round(self.ARL, 1),
+            "AIL": round(self.AIL, 1)
         }
 
         return total_reward, info
@@ -157,7 +162,8 @@ class GraphEnv(gym.Env):
             "part_3": round(avg_part_3, 2),
             "info": info,
             "thin levels left": len(self.thin_levels),
-            "avg_time": round(avg_step_time, 6)
+            "avg_time": round(avg_step_time, 6),
+            "thin/normal": round(self.thin_move_count/self.normal_move_count, 3)
         }
 
         log_file_path = "logfile.json"
@@ -238,6 +244,10 @@ class GraphEnv(gym.Env):
         self.part_1_total = 0
         self.part_2_total = 0
         self.part_3_total = 0
+
+        # Start from 1 to prevent division by 0
+        self.thin_move_count = 1
+        self.normal_move_count = 1
 
         # Used for converting matrix to graph and drawing the graph
         self.graph = Graph(self)

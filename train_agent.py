@@ -8,12 +8,12 @@ import os
 def mask_fn(env):
     return env.valid_action_mask()
 
-models_dir = "models/PPO"
+models_dir = "models"
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
-mtx_name = "af_0_k101"
+mtx_name = "bcsstk17"
 matrix = mtx_to_array(f"mtx_files/{mtx_name}.mtx")
 
 env = GraphEnv(matrix)

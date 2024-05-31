@@ -12,9 +12,6 @@ class Actions:
 
         index = np.where(self.env.thin_levels == original_level)[0][0]
 
-        if index == 0:
-            return False
-
         new_level = self.env.thin_levels[index - 1]
         first_indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * first_indegree - 1)
@@ -37,14 +34,10 @@ class Actions:
 
         self.remove_empty_level(original_level)
 
-        return True
-
 
     def move_node_to_next_level(self, node):
         
         original_level = self.env.node_levels.get(node)
-        if original_level == 0:
-            return False
         
         self.env.node_levels[node] -= 1 # Move node 1 level
 
@@ -65,7 +58,6 @@ class Actions:
         self.env.node_move_count[node] += 1
 
         self.remove_empty_level(original_level)
-        return True
 
 
     def update_graph_after_movement(self, node, new_level):
