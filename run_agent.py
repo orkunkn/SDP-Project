@@ -20,7 +20,7 @@ env = GraphEnv(matrix)
 env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
 # To load and use a previously educated model
-model_path = f"{models_dir}/MaskablePPO.zip"
+model_path = f"{models_dir}/MaskablePPOss.zip"
 model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation
@@ -30,11 +30,11 @@ observation, _ = env.reset()
 first_air = env.unwrapped.AIL
 first_arl = env.unwrapped.ARL
 first_alc = env.unwrapped.ALC
-first_total_cost = sum(env.unwrapped.level_costs.values())
-first_level = max(env.unwrapped.node_levels.values()) + 1
+first_total_cost = sum(env.unwrapped.level_costs)
+first_level = len(env.unwrapped.levels)
 
 # Number of steps to run
-num_steps = 100000
+num_steps = 1000000
 for step in range(num_steps):
     action, _states = model.predict(observation, deterministic=True, action_masks=env.unwrapped.valid_action_mask())
     observation, reward, done, _, info = env.step(action)
@@ -44,8 +44,8 @@ for step in range(num_steps):
         new_air = env.unwrapped.AIL
         new_arl = env.unwrapped.ARL
         new_alc = env.unwrapped.ALC
-        new_total_cost = sum(env.unwrapped.level_costs.values())
-        new_level = max(env.unwrapped.node_levels.values()) + 1
+        new_total_cost = sum(env.unwrapped.level_costs)
+        new_level = len(env.unwrapped.levels)
 
         total_cost_change = ((new_total_cost - first_total_cost) / first_total_cost) * 100
         air_change = ((new_air - first_air) / first_air) * 100

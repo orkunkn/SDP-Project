@@ -24,7 +24,7 @@ env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 model_path = f"{models_dir}/MaskablePPO.zip"
 #model = MaskablePPO.load(model_path, env=env)
 
-model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00025, n_steps=512)
+model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00015, n_steps=2048)
 
 model.learn(total_timesteps=2048*25)
 

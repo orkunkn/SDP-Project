@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import networkx as nx
-from collections import defaultdict
+import numpy as np
 class Graph:
 
     def __init__(self, environment):
@@ -12,26 +12,38 @@ class Graph:
 
         for x in range(matrix.shape[0]):
             self.env.G.add_node(x)
-            self.env.node_levels[x] = 0
+
+        # Initially, node_levels is a list with all elements set to 0
+        self.env.node_levels = [0] * matrix.shape[0]
 
         for row, col in zip(rows, cols):
             if row > col:  # Ensuring lower triangular structure
                 self.env.G.add_edge(col, row)
                 self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
 
-        self.env.node_move_count = defaultdict(int)
-        self.env.node_count_per_level = defaultdict(int)
-        self.env.level_costs = defaultdict(int)
-        self.env.level_indegrees = defaultdict(int)
+        # Convert to NumPy array
+        self.env.node_levels = np.array(self.env.node_levels, dtype=np.int32)
+        max_level = np.max(self.env.node_levels) + 1  # Find max level for array sizes
 
-        self.env.total_nodes = self.env.G.number_of_nodes()
+        # Initialize NumPy arrays
+        self.env.node_move_count = np.zeros(len(self.env.node_levels), dtype=int)
+        self.env.node_count_per_level = np.zeros(max_level, dtype=int)
+        self.env.level_costs = np.zeros(max_level, dtype=int)
+        self.env.level_indegrees = np.zeros(max_level, dtype=int)
+        self.env.levels = np.unique(self.env.node_levels)
         
-        for node, level in self.env.node_levels.items():
+        self.env.total_nodes = self.env.G.number_of_nodes()
+        self.env.total_parents = sum(degree for _, degree in self.env.G.in_degree())
+        self.env.level_count = len(self.env.levels)
+            
+        for node in range(len(self.env.node_levels)):
+            level = self.env.node_levels[node]
             indegree = self.env.G.in_degree(node)
             cost = max(0, 2 * indegree - 1)
-            
+
             # Update the level cost and total cost
             self.env.level_costs[level] += cost
+            self.env.total_cost += cost
 
             # Increment the node count for the level
             self.env.node_count_per_level[level] += 1
@@ -39,11 +51,11 @@ class Graph:
             # Update the level indegrees
             self.env.level_indegrees[level] += indegree
 
-
         """ Graph drawing function """
     def draw_graph(self, info_text="",name=""):
 
-        pos = {node: (node, -level) for node, level in self.env.node_levels.items()}
+        pos = {node: (node, -self.env.node_levels[node]) for node in range(len(self.env.node_levels))}
+
         plt.figure(figsize=(10, 8)) 
 
         nx.draw_networkx_nodes(self.env.G, pos, node_size=70)

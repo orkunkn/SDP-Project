@@ -28,10 +28,10 @@ for filename in os.listdir(mtx_directory):
             model = MaskablePPO.load(f"{models_dir}/MaskablePPO.zip", env=env)
         else:
             print("---- Created new model. ----")
-            model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00025, n_steps=512)
+            model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00015, n_steps=2048)
 
         print(f"---- Starting training for {filename} ----")
-        model.learn(total_timesteps=2048*25)
+        model.learn(total_timesteps=2048*100)
 
         # Save the model after learning
         model.save(f"{models_dir}/MaskablePPO.zip")
