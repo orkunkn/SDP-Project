@@ -31,6 +31,15 @@ class Graph:
         self.env.level_costs = np.zeros(max_level, dtype=int)
         self.env.level_indegrees = np.zeros(max_level, dtype=int)
         self.env.levels = np.unique(self.env.node_levels)
+
+        # Compute in-degrees for all nodes
+        in_degrees = dict(self.env.G.in_degree())
+
+        # Precompute the sum of in-degrees of parent nodes for each node
+        sum_costs_of_parents = [sum(2 * in_degrees[pred] - 1 for pred in self.env.G.predecessors(node)) for node in self.env.G.nodes()]
+
+        # Convert the results into a numpy array
+        self.env.node_parents_cost_sum = np.array(sum_costs_of_parents)
         
         self.env.total_nodes = self.env.G.number_of_nodes()
         self.env.total_parents = sum(degree for _, degree in self.env.G.in_degree())

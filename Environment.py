@@ -11,7 +11,7 @@ from torch.distributions import Distribution
 Distribution.set_default_validate_args(False)
 
 MAX_ACTION_SPACE = 6765
-MAX_OBS_SPACE = MAX_ACTION_SPACE * 3 + 5
+MAX_OBS_SPACE = MAX_ACTION_SPACE * 3 + 6
 
 
 class GraphEnv(gym.Env):
@@ -24,12 +24,12 @@ class GraphEnv(gym.Env):
         self.h1 = 2.5
         self.k2 = 7.3
         self.k3 = 10
-        self.h3 = 10
+        self.h3 = 0.2
         self.k4 = 10
         self.h4 = 0.4
 
         # Used for logging
-        self.check_count = 1024
+        self.check_count = 2048
 
         self.matrix = matrix
 
@@ -65,7 +65,9 @@ class GraphEnv(gym.Env):
         
         start_time = time.perf_counter()
 
-        node_to_move = np.where(self.node_levels == action)[0][0]
+        level_nodes = np.where(self.node_levels == action)[0]
+        min_index = np.argmin(self.node_parents_cost_sum[level_nodes])
+        node_to_move = level_nodes[min_index]       
         
         # Keep the old values for reward comparison
         old_node_level = self.node_levels[node_to_move]
@@ -111,11 +113,14 @@ class GraphEnv(gym.Env):
         new_node_level = self.node_levels[node]
         node_moved_level = self.node_move_count[node]
         new_level_node_count = self.node_count_per_level[new_node_level]
+        new_level_cost = self.level_costs[new_node_level]
         source_node_count -= 1
 
         part_1 = self.k1 * 10**(-source_node_count * self.h1 / self.ARL)
         part_2 = - (self.k2 / 729) * (node_moved_level - 10)**3 if node_moved_level <= 20 else -10
-        part_3 = max(-self.h3 * (self.level_costs[new_node_level] / self.ALC - 1)**2 + self.k3, -10)
+        # part_3 = max(-self.h3 * (self.level_costs[new_node_level] / self.ALC - 1)**2 + self.k3, -10)
+        part_3 = self.k4 / (1 + self.h3 * (self.ALC - new_level_cost)) if new_level_cost < self.ALC \
+                 else (self.k3 + 10) / (1 + 2 * self.h4 * (new_level_cost - self.ALC)) - 10
         part_4 = self.k4 / (1 + self.h4 * (self.ARL - new_level_node_count)) if new_level_node_count < self.ARL \
                  else (self.k4 + 10) / (1 + 2 * self.h4 * (new_level_node_count - self.ARL)) - 10
         
@@ -172,29 +177,31 @@ class GraphEnv(gym.Env):
         self.part_4_total = 0
 
     def create_observation(self):
-        max_level_indegree = np.max(self.level_indegrees)
+        max_level_cost = np.max(self.level_costs)
+        max_node_at_level = np.max(self.node_count_per_level)
 
         node_density = self.node_count_per_level / self.total_nodes
-        move_norm = self.level_move_count / max((self.ARL * 20), np.max(self.level_move_count))
-        level_indegree_norm = self.level_indegrees / max_level_indegree
+        move_norm = self.level_move_count / max_node_at_level
+        level_cost_norm = self.level_costs / max_level_cost
 
         node_density_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
         move_norm_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
-        level_indegree_norm_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
+        level_cost_norm_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
 
         node_density_array[:len(node_density)] = node_density
         move_norm_array[:len(move_norm)] = move_norm
-        level_indegree_norm_array[:len(level_indegree_norm)] = level_indegree_norm
+        level_cost_norm_array[:len(level_cost_norm)] = level_cost_norm
 
         level_density = len(self.thin_levels) / self.level_count
-        arl_norm = self.ARL / self.total_nodes
-        ail_norm = self.AIL / max_level_indegree
+        arl_norm = self.ARL / max_node_at_level
+        alc_norm = self.ALC / max_level_cost
+        ail_norm = self.AIL / np.max(self.level_indegrees)
 
         # Historical and contextual features
-        recent_thin_level_changes = (len(self.thin_levels) - self.first_thin_level_count) / self.first_thin_level_count
+        recent_thin_level_changes = (self.first_thin_level_count - len(self.thin_levels)) / self.first_thin_level_count
         recent_move_ratio = self.thin_move_count / (self.normal_move_count)
 
-        combined_features = np.concatenate([node_density_array, level_indegree_norm_array, move_norm_array, [arl_norm, ail_norm, level_density, recent_thin_level_changes, recent_move_ratio]])
+        combined_features = np.concatenate([node_density_array, level_cost_norm_array, move_norm_array, [arl_norm, alc_norm, ail_norm, level_density, recent_thin_level_changes, recent_move_ratio]])
         normalized_features = combined_features / np.linalg.norm(combined_features, ord=2)
 
         observation = np.zeros(MAX_OBS_SPACE, dtype=np.float32)
@@ -223,6 +230,8 @@ class GraphEnv(gym.Env):
 
         # A dictionary for indegree count of every level
         self.level_indegrees = []
+
+        self.node_parents_cost_sum = []
 
         # Thin levels in graph
         self.thin_levels = []

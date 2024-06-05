@@ -20,7 +20,7 @@ env = GraphEnv(matrix)
 env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
 # To load and use a previously educated model
-model_path = f"{models_dir}/MaskablePPOss.zip"
+model_path = f"{models_dir}/MaskablePPO.zip"
 model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation
@@ -33,13 +33,16 @@ first_alc = env.unwrapped.ALC
 first_total_cost = sum(env.unwrapped.level_costs)
 first_level = len(env.unwrapped.levels)
 
-# Number of steps to run
-num_steps = 1000000
-for step in range(num_steps):
+# Directory containing mtx files
+mtx_directory = "mtx_files"
+
+print("Running model for", mtx_name)
+
+# Iterate over all mtx files in the directory
+while True:
     action, _states = model.predict(observation, deterministic=True, action_masks=env.unwrapped.valid_action_mask())
     observation, reward, done, _, info = env.step(action)
 
-    # Render the environment
     if done:
         new_air = env.unwrapped.AIL
         new_arl = env.unwrapped.ARL

@@ -11,7 +11,7 @@ class Constructor:
         self.env.ALC = self.env.total_cost / self.env.level_count
         
         # Condition to find thin levels or clean up based on thin levels array
-        if len(self.env.thin_levels) >= self.env.first_thin_level_count * 0.15:
+        if len(self.env.thin_levels) >= self.env.first_thin_level_count * 0.3:
             self.find_thin_levels()
         else:
             # Removing empty levels
