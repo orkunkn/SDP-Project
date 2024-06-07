@@ -80,22 +80,24 @@ class Actions:
         self.env.node_parents_cost_sum[node] += parent_indegree_sum
 
 
-
     def update_graph_after_movement(self, node, new_level):
         # Filter parents that are now on the same level and collect grandparents if needed.
         parents_same_level = []
-        grandparents_to_connect = []
+        grandparents_map = {}  # To store grandparents for each parent
 
         for parent in list(self.env.G.predecessors(node)):
             if self.env.node_levels[parent] == new_level:
                 parents_same_level.append(parent)
-                grandparents_to_connect.extend(self.env.G.predecessors(parent))
+                # Collect grandparents for each parent
+                grandparents_map[parent] = list(self.env.G.predecessors(parent))
 
         # Remove edges from parents on the same level
         for parent in parents_same_level:
             self.env.G.remove_edge(parent, node)
 
         # Add edges from grandparents to node, avoiding duplicate edges
-        for grandparent in set(grandparents_to_connect):
-            if not self.env.G.has_edge(grandparent, node):
-                self.env.G.add_edge(grandparent, node)
+        for parent in parents_same_level:
+            for grandparent in set(grandparents_map[parent]):  # Ensure uniqueness
+                if not self.env.G.has_edge(grandparent, node):
+                    weight = self.env.G[grandparent][parent]['weight']
+                    self.env.G.add_edge(grandparent, node, weight=weight)

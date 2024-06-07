@@ -1,5 +1,8 @@
 *.json
 mtx_files
+mtx_files_after
+bin_files
+logs
 models
 new
 matrices.txt

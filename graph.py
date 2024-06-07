@@ -9,20 +9,13 @@ class Graph:
 
     def convert_matrix_to_graph(self, matrix):
         rows, cols = matrix.nonzero()
+        data = matrix.data
+        self.env.G.add_nodes_from(range(matrix.shape[0]))
+        self.env.node_levels = np.zeros(matrix.shape[0], dtype=int)
+        for row, col, weight in zip(rows, cols, data):
+            self.env.G.add_edge(col, row, weight=weight)
+            self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
 
-        for x in range(matrix.shape[0]):
-            self.env.G.add_node(x)
-
-        # Initially, node_levels is a list with all elements set to 0
-        self.env.node_levels = [0] * matrix.shape[0]
-
-        for row, col in zip(rows, cols):
-            if row > col:  # Ensuring lower triangular structure
-                self.env.G.add_edge(col, row)
-                self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
-
-        # Convert to NumPy array
-        self.env.node_levels = np.array(self.env.node_levels, dtype=np.int32)
         max_level = np.max(self.env.node_levels) + 1  # Find max level for array sizes
 
         # Initialize NumPy arrays

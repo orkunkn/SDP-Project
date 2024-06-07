@@ -9,6 +9,7 @@ class Constructor:
         self.env.AIL = self.env.total_parents / self.env.level_count
         self.env.ARL = self.env.total_nodes / self.env.level_count
         self.env.ALC = self.env.total_cost / self.env.level_count
+        self.env.AIR = self.env.total_parents / self.env.total_nodes
         
         # Condition to find thin levels or clean up based on thin levels array
         if len(self.env.thin_levels) >= self.env.first_thin_level_count * 0.3:

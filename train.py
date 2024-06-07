@@ -24,7 +24,7 @@ env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 model_path = f"{models_dir}/MaskablePPO.zip"
 #model = MaskablePPO.load(model_path, env=env)
 
-model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.00005, n_steps=2048)
+model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.0001, n_steps=2048)
 
 model.learn(total_timesteps=2048*30)
 
@@ -32,25 +32,3 @@ model.learn(total_timesteps=2048*30)
 
 # To save the model after learning
 model.save(f"{models_dir}/MaskablePPO")
-
-
-# 0.5 dene
-
-"""-----------------------------------------------
-|            | Before   | After    | Change   |
------------------------------------------------
-| AIL        | 157      | 499      | +218   % |
-| ARL        | 8.24     | 16.8     | +103.7 % |
-| ALC        | 306      | 981      | +220.9 % |
-| Total Cost | 4.07e+05 | 6.42e+05 | +57.55 % |
-| Level      | 1.33e+03 | 654      | -50.9  % |
------------------------------------------------
------------------------------------------------
-|            | Before   | After    | Change   |
------------------------------------------------
-| AIL        | 111      | 404      | +263.9 % |
-| ARL        | 5.07     | 10.9     | +114.7 % |
-| ALC        | 217      | 796      | +267.4 % |
-| Total Cost | 1.09e+06 | 1.87e+06 | +71.16 % |
-| Level      | 5.03e+03 | 2.34e+03 | -53.42 % |
------------------------------------------------"""

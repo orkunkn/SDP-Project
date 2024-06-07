@@ -33,11 +33,12 @@ class GraphEnv(gym.Env):
 
         self.matrix = matrix
 
-        # A multi discrete action space. Nodes in thin levels will be chosen.
+        # A discrete action space. Nodes in thin levels will be chosen.
         # First action is level and second action is the action (move to next level or move to next thin level)
+        # (If action < MAX_ACTION_SPACE --> thin move, else --> normal move)
         self.action_space = gym.spaces.Discrete(MAX_ACTION_SPACE * 2)
 
-        # Observation space contains thin levels, level details and average values in graph
+        # Observation space contains level details and average values in graph
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(MAX_OBS_SPACE,), dtype=np.float32)
 
         # Clear the log file at the start of each run
@@ -65,6 +66,7 @@ class GraphEnv(gym.Env):
         
         start_time = time.perf_counter()
 
+        # Find the node in selected level which has lowest parent cost
         level_nodes = np.where(self.node_levels == action)[0]
         min_index = np.argmin(self.node_parents_cost_sum[level_nodes])
         node_to_move = level_nodes[min_index]       
@@ -249,6 +251,7 @@ class GraphEnv(gym.Env):
         self.AIL = 0
         self.ARL = 0
         self.ALC = 0
+        self.AIR = 0
 
         # Used for logging
         self.terminated = False
