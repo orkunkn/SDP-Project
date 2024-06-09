@@ -15,7 +15,7 @@ if not os.path.exists(models_dir):
 mtx_name = "bcsstk17"
 matrix = mtx_to_array(f"mtx_files/{mtx_name}.mtx")
 
-env = GraphEnv(matrix)
+env = GraphEnv(matrix, mode="run")
 
 env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 

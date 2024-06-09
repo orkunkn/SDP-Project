@@ -12,9 +12,16 @@ class Graph:
         data = matrix.data
         self.env.G.add_nodes_from(range(matrix.shape[0]))
         self.env.node_levels = np.zeros(matrix.shape[0], dtype=int)
-        for row, col, weight in zip(rows, cols, data):
-            self.env.G.add_edge(col, row, weight=weight)
-            self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
+
+        if self.env.mode == "run":
+            data = matrix.data
+            for row, col, weight in zip(rows, cols, data):
+                self.env.G.add_edge(col, row, weight=weight)
+                self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
+        else:
+            for row, col in zip(rows, cols):
+                self.env.G.add_edge(col, row)
+                self.env.node_levels[row] = max(self.env.node_levels[row], self.env.node_levels[col] + 1)
 
         max_level = np.max(self.env.node_levels) + 1  # Find max level for array sizes
 

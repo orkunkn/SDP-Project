@@ -16,7 +16,7 @@ MAX_OBS_SPACE = MAX_ACTION_SPACE * 3 + 6
 
 class GraphEnv(gym.Env):
 
-    def __init__(self, matrix):
+    def __init__(self, matrix, mode="train"):
         super(GraphEnv, self).__init__()
 
         # Reward coefficients
@@ -32,6 +32,7 @@ class GraphEnv(gym.Env):
         self.check_count = 2048
 
         self.matrix = matrix
+        self.mode = mode
 
         # A discrete action space. Nodes in thin levels will be chosen.
         # First action is level and second action is the action (move to next level or move to next thin level)
@@ -120,9 +121,8 @@ class GraphEnv(gym.Env):
 
         part_1 = self.k1 * 10**(-source_node_count * self.h1 / self.ARL)
         part_2 = - (self.k2 / 729) * (node_moved_level - 10)**3 if node_moved_level <= 20 else -10
-        # part_3 = max(-self.h3 * (self.level_costs[new_node_level] / self.ALC - 1)**2 + self.k3, -10)
-        part_3 = self.k4 / (1 + self.h3 * (self.ALC - new_level_cost)) if new_level_cost < self.ALC \
-                 else (self.k3 + 10) / (1 + 2 * self.h4 * (new_level_cost - self.ALC)) - 10
+        part_3 = self.k3 / (1 + self.h3 * (self.ALC - new_level_cost)) if new_level_cost < self.ALC \
+                 else (self.k3 + 10) / (1 + 2 * self.h3 * (new_level_cost - self.ALC)) - 10
         part_4 = self.k4 / (1 + self.h4 * (self.ARL - new_level_node_count)) if new_level_node_count < self.ARL \
                  else (self.k4 + 10) / (1 + 2 * self.h4 * (new_level_node_count - self.ARL)) - 10
         

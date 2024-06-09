@@ -23,7 +23,7 @@ for filename in os.listdir(mtx_directory):
         mtx_name = filename[:-4]  # Remove the '.mtx' extension
         matrix = mtx_to_array(f"mtx_files/{mtx_name}.mtx")
 
-        env = GraphEnv(matrix)
+        env = GraphEnv(matrix, mode="run")
 
         env = ActionMasker(env, mask_fn)  # Wrap to enable masking
 
