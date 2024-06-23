@@ -32,7 +32,6 @@ for filename in os.listdir(mtx_directory):
 
         # Initialize the environment and get the starting observation
         observation, _ = env.reset()
-        # env.render()
 
         first_ail = env.unwrapped.AIL
         first_arl = env.unwrapped.ARL
@@ -76,5 +75,4 @@ for filename in os.listdir(mtx_directory):
                 print("-" * 47)
 
                 graph_to_mtx(env.unwrapped.G, f"{mtx_name}")
-                # env.render()
                 break

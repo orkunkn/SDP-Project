@@ -25,7 +25,6 @@ model = MaskablePPO.load(model_path, env=env)
 
 # Initialize the environment and get the starting observation
 observation, _ = env.reset()
-# env.render()
 
 first_ail = env.unwrapped.AIL
 first_arl = env.unwrapped.ARL
@@ -72,6 +71,4 @@ while True:
         print("-" * 47)
 
         graph_to_mtx(env.unwrapped.G, f"{mtx_name}")
-        # env.render()
         break
-        # observation, _ = env.reset()
