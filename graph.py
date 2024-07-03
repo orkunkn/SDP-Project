@@ -8,6 +8,8 @@ class Graph:
 
 
     def convert_matrix_to_graph(self, matrix):
+
+        # Create the graph from the matrix
         rows, cols = matrix.nonzero()
         self.env.G.add_nodes_from(range(matrix.shape[0]))
         self.env.node_levels = np.zeros(matrix.shape[0], dtype=int)

@@ -3,8 +3,10 @@ import scipy.sparse
 import networkx as nx
 import os
 
+# Used for recreating the matrix after the process
 upper_triangular = None
 
+# Converts the .mtx to csr format to create a graph
 def mtx_to_array(file_name):
     global upper_triangular
     mtx_file = file_name  # path of the .mtx file
@@ -19,6 +21,7 @@ def mtx_to_array(file_name):
     return lower_triangular
 
 
+# Converts the graph to .mtx format after process
 def graph_to_mtx(graph, file_name):
     # Step 3: Convert the modified graph back to CSR matrix
     after_csr = nx.to_scipy_sparse_array(graph, format="csr", weight="weight")
@@ -35,9 +38,12 @@ def graph_to_mtx(graph, file_name):
 
     # Optionally, save the new CSR matrix or perform further operations
     scipy.io.mmwrite(f"{folder}/{file_name}_after.mtx", after_csr)
+
+    # Create .bin files of the matrix
     save_csr_components_as_bin(after_csr, prefix=file_name)
 
 
+# Used for converting the csr to 3 .bin files
 def save_csr_components_as_bin(csr_matrix, prefix='matrix'):
     folder = "bin_files"
 

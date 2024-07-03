@@ -8,11 +8,14 @@ import time
 import json
 import os
 from torch.distributions import Distribution
+
+# Used for preventing an error with MaskablePPO
 Distribution.set_default_validate_args(False)
 
+# Max level count of the matrices
 MAX_ACTION_SPACE = 6765
-MAX_OBS_SPACE = MAX_ACTION_SPACE * 3 + 6
 
+MAX_OBS_SPACE = MAX_ACTION_SPACE * 3 + 6
 
 class GraphEnv(gym.Env):
 
@@ -50,7 +53,11 @@ class GraphEnv(gym.Env):
         action_masks = np.zeros(MAX_ACTION_SPACE * 2, dtype=bool)
         total_action = MAX_ACTION_SPACE * 2 - 1
 
+        # Mask the action space for thin levels
+
+        # Thin level move mask
         action_masks[self.thin_levels[1:]] = True
+        # Normal move mask
         reverse_indices = total_action - self.thin_levels
         action_masks[reverse_indices] = True
 
@@ -60,8 +67,10 @@ class GraphEnv(gym.Env):
         return action_masks
 
     def step(self, action):
-
+        
+        # Decide the action
         move_action = "thin" if action < MAX_ACTION_SPACE else "normal"
+
         if move_action == "normal":
             action = MAX_ACTION_SPACE * 2 - 1 - action
         
@@ -105,6 +114,7 @@ class GraphEnv(gym.Env):
         self.total_step_time += end_time - start_time
         self.time_step += 1
 
+        # Log the current graph info
         if self.terminated or self.time_step % self.check_count == 0:
             self.log_info(info)
 
@@ -119,10 +129,17 @@ class GraphEnv(gym.Env):
         new_level_cost = self.level_costs[new_node_level]
         source_node_count -= 1
 
+        # Source level node count reward
         part_1 = self.k1 * 10**(-source_node_count * self.h1 / self.ARL)
+
+        # Node move count reward
         part_2 = - (self.k2 / 729) * (node_moved_level - 10)**3 if node_moved_level <= 20 else -10
+
+        # Getting closer to ALC reward
         part_3 = self.k3 / (1 + self.h3 * (self.ALC - new_level_cost)) if new_level_cost < self.ALC \
                  else (self.k3 + 10) / (1 + 2 * self.h3 * (new_level_cost - self.ALC)) - 10
+        
+        # Getting closer to ARL reward
         part_4 = self.k4 / (1 + self.h4 * (self.ARL - new_level_node_count)) if new_level_node_count < self.ARL \
                  else (self.k4 + 10) / (1 + 2 * self.h4 * (new_level_node_count - self.ARL)) - 10
         
@@ -132,8 +149,11 @@ class GraphEnv(gym.Env):
         self.part_3_total += part_3
         self.part_4_total += part_4
 
+        # Normalize the reward between -1 and 1
         total_reward = (part_1 + part_2 + part_3 + part_4) / 40
+
         info = {"ALC": round(self.ALC, 1), "ARL": round(self.ARL, 1), "AIL": round(self.AIL, 1)}
+
         return total_reward, info
 
     
@@ -160,6 +180,7 @@ class GraphEnv(gym.Env):
             "thin/normal": round(self.thin_move_count/self.normal_move_count, 3)
         }
 
+        # Log the info
         log_file_path = "logfile.json"
         log_data = []
         if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 0:
@@ -171,6 +192,7 @@ class GraphEnv(gym.Env):
         with open(log_file_path, "w") as f:
              json.dump(log_data, f, indent=4)
 
+        # Reset metrics
         self.total_step_time = 0
         self.total_reward = 0
         self.part_1_total = 0
@@ -182,6 +204,7 @@ class GraphEnv(gym.Env):
         max_level_cost = np.max(self.level_costs)
         max_node_at_level = np.max(self.node_count_per_level)
 
+        # Observation space arrays
         node_density = self.node_count_per_level / self.total_nodes
         move_norm = self.level_move_count / max_node_at_level
         level_cost_norm = self.level_costs / max_level_cost
@@ -190,10 +213,12 @@ class GraphEnv(gym.Env):
         move_norm_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
         level_cost_norm_array = np.zeros(MAX_ACTION_SPACE, dtype=np.float32)
 
+        # Fill the gaps with 0 since obs space has to be fixed length
         node_density_array[:len(node_density)] = node_density
         move_norm_array[:len(move_norm)] = move_norm
         level_cost_norm_array[:len(level_cost_norm)] = level_cost_norm
 
+        # Other metrics
         level_density = len(self.thin_levels) / self.level_count
         arl_norm = self.ARL / max_node_at_level
         alc_norm = self.ALC / max_level_cost
@@ -203,6 +228,7 @@ class GraphEnv(gym.Env):
         recent_thin_level_changes = (self.first_thin_level_count - len(self.thin_levels)) / self.first_thin_level_count
         recent_move_ratio = self.thin_move_count / (self.normal_move_count)
 
+        # Concatenate the values and normalize
         combined_features = np.concatenate([node_density_array, level_cost_norm_array, move_norm_array, [arl_norm, alc_norm, ail_norm, level_density, recent_thin_level_changes, recent_move_ratio]])
         normalized_features = combined_features / np.linalg.norm(combined_features, ord=2)
 
@@ -217,11 +243,13 @@ class GraphEnv(gym.Env):
 
         self.G = nx.DiGraph()
 
-        # A dictionary mapping each node to its level {node: level}
+        # A numpy array to keep node levels, index = node and value = level
         self.node_levels = []
 
+        # A numpy array to keep node move counts, index = node and value = move count
         self.node_move_count = []
 
+        # A numpy array to keep total move counts of nodes in the same level, used in obs space
         self.level_move_count = np.zeros(MAX_ACTION_SPACE, dtype=int)
 
         # A node counter for every level.
@@ -233,11 +261,13 @@ class GraphEnv(gym.Env):
         # A dictionary for indegree count of every level
         self.level_indegrees = []
 
+        # A numpy array to keep node parents' costs' sum, used for finding the node in a level with the least parent cost sum
         self.node_parents_cost_sum = []
 
         # Thin levels in graph
         self.thin_levels = []
 
+        # All levels in graph
         self.levels = []
 
         self.total_nodes = 0
@@ -263,7 +293,7 @@ class GraphEnv(gym.Env):
         self.part_3_total = 0
         self.part_4_total = 0
 
-        # Start from 1 to prevent division by 0
+        # Start from 1 to prevent division by 0, used in obs space
         self.thin_move_count = 1
         self.normal_move_count = 1
 

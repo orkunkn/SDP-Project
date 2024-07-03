@@ -6,6 +6,8 @@ class Actions:
 
 
     def move_node_to_next_thin_level(self, node, source_node_count, original_level):
+
+        # Find the next thin level
         thin_index = np.where(self.env.thin_levels == original_level)[0][0]
         target_level = self.env.thin_levels[thin_index - 1]
 
@@ -30,22 +32,28 @@ class Actions:
             temp_level = new_level  # Update the current level for the next iteration
             update_graph(node, temp_level)
 
+        # Update the node level
         self.env.node_levels[node] = new_level
 
+        # Update other metrics
         self.finalize_movement(node, original_level, target_level, first_indegree, first_cost, first_parent_indegree_sum)
 
+        # If level has 0 nodes after move, delete the level
         if source_node_count == 1:
             self.env.levels = np.delete(self.env.levels, np.where(self.env.levels == original_level)[0])
             self.env.level_count -= 1
 
+
     def move_node_to_next_level(self, node, source_node_count, original_level):
+
+        # Find the next level
         index = np.where(self.env.levels == original_level)[0][0]
         target_level = self.env.levels[index - 1]
 
-        self.env.node_levels[node] = target_level  # Move node 1 level
-
         first_indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * first_indegree - 1)
+
+        self.env.node_levels[node] = target_level  # Move node 1 level
 
         # Find the parent nodes (predecessors)
         parent_nodes = list(self.env.G.predecessors(node))
@@ -58,11 +66,14 @@ class Actions:
         else:
             self.update_graph_after_movement_without_weights(node, target_level)
 
+        # Update other metrics
         self.finalize_movement(node, original_level, target_level, first_indegree, first_cost, first_parent_indegree_sum)
 
+        # If level has 0 nodes after move, delete the level
         if source_node_count == 1:
             self.env.levels = np.delete(self.env.levels, np.where(self.env.levels == original_level)[0])
             self.env.level_count -= 1
+
 
     def finalize_movement(self, node, original_level, target_level, first_indegree, first_cost, first_parent_indegree_sum):
         indegree = self.env.G.in_degree(node)
@@ -79,6 +90,7 @@ class Actions:
         self.env.total_parents += (indegree - first_indegree)
         self.env.total_cost += (new_cost - first_cost)
         self.env.node_parents_cost_sum[node] -= first_parent_indegree_sum
+        
         # Find the parent nodes (predecessors)
         parent_nodes = list(self.env.G.predecessors(node))
 
