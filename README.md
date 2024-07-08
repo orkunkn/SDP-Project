@@ -12,8 +12,8 @@ a faster calculation in several areas. This model uses MaskablePPO
 from sb3-contrib library which provides the PPO algorithm with an
 option to mask the action space.
 
-The idea is determining the thin ideas in the graph using several
-conditions and removing the thin levels until a point.
+The idea is to determine the thin levels in the graph using several
+conditions and removing them by shifting their nodes to other levels. This will result in reducing the critical path of the graph as well as in increasing the parallelism of the levels.
 
 Environment.py creates a custom environment for a graph conversion
 of the matrix and taking actions such as moving a node by the agent.
