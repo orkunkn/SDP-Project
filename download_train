@@ -1,0 +1,26 @@
+#!/bin/bash
+
+cd train_files
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Bourchtein/atmosmodj.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/FEMLAB/sme3Db.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Norris/torso3.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_AFE/af_shell9.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_ISEI/para-10.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/vanHeukelum/cage13.tar.gz
+   
+ tar xvf atmosmodj.tar.gz
+ mv atmosmodj/atmosmodj.mtx .
+ tar xvf sme3Db.tar.gz
+ mv sme3Db/sme3Db.mtx .
+ tar xvf torso3.tar.gz
+ mv torso3/torso3.mtx .
+ tar xvf af_shell9.tar.gz
+ mv af_shell9/af_shell9.mtx .
+ tar xvf para-10.tar.gz
+ mv para-10/para-10.mtx .
+ tar xvf cage13.tar.gz
+ mv cage13/cage13.mtx .
+
+ rm -rf */
+ rm *.tar.gz
+cd -
