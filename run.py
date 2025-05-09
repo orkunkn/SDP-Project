@@ -2,6 +2,7 @@ from mtx_conversions import mtx_to_array, graph_to_mtx
 from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from Environment import GraphEnv
+import rewriting 
 import os
 
 def mask_fn(env):
@@ -58,16 +59,22 @@ while True:
         air_change = ((new_air - first_air) / first_air) * 100
         level_change = ((new_level - first_level) / first_level) * 100
 
+        if os.path.exists(mtx_name+"_rewriting_list.csv"):
+          os.remove(mtx_name+"_rewriting_list.csv")
+        rewriting.dump_rewriting_list(mtx_name+"_rewriting_list.csv",rewriting.rewriting_list)
+        rewriting.sorted_entries = sorted(rewriting.rewriting_list, key=lambda x: x[0])
+        rewriting.dump_rewriting_list(mtx_name+"_rewriting_list_sorted.csv",rewriting.sorted_entries)
+
         # Create a formatted table
         print("-" * 47)
         print("| {:<10} | {:<8} | {:<8} | {:<8} |".format("", "Before", "After", "Change"))
         print("-" * 47)
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("AIL", first_ail, new_ail, ail_change))
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("ARL", first_arl, new_arl, arl_change))
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("ALC", first_alc, new_alc, alc_change))
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("AIR", first_air, new_air, air_change))
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("Total Cost", first_total_cost, new_total_cost, total_cost_change))
-        print("| {:<10} | {:<8.3g} | {:<8.3g} | {:<+7.4g}% |".format("Level", first_level, new_level, level_change))
+        print("| {:<10} | {:<8.3f} | {:<8.3f} | {:<+7.3f}% |".format("AIL", first_ail, new_ail, ail_change))
+        print("| {:<10} | {:<8.3f} | {:<8.3f} | {:<+7.3f}% |".format("ARL", first_arl, new_arl, arl_change))
+        print("| {:<10} | {:<8.3f} | {:<8.3f} | {:<+7.3f}% |".format("ALC", first_alc, new_alc, alc_change))
+        print("| {:<10} | {:<8.3f} | {:<8.3f} | {:<+7.3f}% |".format("AIR", first_air, new_air, air_change))
+        print("| {:<10} | {:<8.0f} | {:<8.0f} | {:<+7.0f}% |".format("Total Cost", first_total_cost, new_total_cost, total_cost_change))
+        print("| {:<10} | {:<8.0f} | {:<8.0f} | {:<+7.0f}% |".format("Level", first_level, new_level, level_change))
         print("-" * 47)
 
         graph_to_mtx(env.unwrapped.G, f"{mtx_name}")

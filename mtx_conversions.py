@@ -1,6 +1,7 @@
 import scipy.io
 import scipy.sparse
 import networkx as nx
+import numpy as np
 import os
 
 # Used for recreating the matrix after the process
@@ -51,6 +52,6 @@ def save_csr_components_as_bin(csr_matrix, prefix='matrix'):
         os.makedirs(folder)
 
     # Save the data, indices, and indptr components of the CSR matrix with .bin extension
-    csr_matrix.data.tofile(f'bin_files/{prefix}_data.bin')
-    csr_matrix.indices.tofile(f'bin_files/{prefix}_indices.bin')
-    csr_matrix.indptr.tofile(f'bin_files/{prefix}_indptr.bin')
+    csr_matrix.data.astype(np.float32).tofile(f'bin_files/{prefix}_vals_TR.bin')
+    csr_matrix.indices.astype(np.int32).tofile(f'bin_files/{prefix}_parents_TR.bin')
+    csr_matrix.indptr.astype(np.int32).tofile(f'bin_files/{prefix}_rowPtr_TR.bin')

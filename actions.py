@@ -1,4 +1,6 @@
 import numpy as np
+import rewriting
+
 class Actions:
     
     def __init__(self, environment):
@@ -10,6 +12,8 @@ class Actions:
         # Find the next thin level
         thin_index = np.where(self.env.thin_levels == original_level)[0][0]
         target_level = self.env.thin_levels[thin_index - 1]
+
+        rewriting.rewriting_list.append((node,original_level,target_level))
 
         first_indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * first_indegree - 1)
@@ -49,6 +53,8 @@ class Actions:
         # Find the next level
         index = np.where(self.env.levels == original_level)[0][0]
         target_level = self.env.levels[index - 1]
+
+        rewriting.rewriting_list.append((node,original_level,target_level))
 
         first_indegree = self.env.G.in_degree(node)
         first_cost = max(0, 2 * first_indegree - 1)

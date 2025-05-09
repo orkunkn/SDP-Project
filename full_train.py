@@ -13,7 +13,7 @@ if not os.path.exists(models_dir):
     os.makedirs(models_dir)
 
 # Directory containing mtx files
-mtx_directory = "mtx_files"
+mtx_directory = "train_files"
 
 # Iterate over all mtx files in the directory
 for filename in os.listdir(mtx_directory):
@@ -28,10 +28,10 @@ for filename in os.listdir(mtx_directory):
             model = MaskablePPO.load(f"{models_dir}/MaskablePPO.zip", env=env)
         else:
             print("---- Created new model. ----")
-            model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.0002, n_steps=2048)
+            model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=0.0001, n_steps=1024)
 
         print(f"---- Starting training for {filename} ----")
-        model.learn(total_timesteps=2048*100)
+        model.learn(total_timesteps=1024*100)
 
         # Save the model after learning
         model.save(f"{models_dir}/MaskablePPO.zip")

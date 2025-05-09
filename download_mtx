@@ -1,0 +1,13 @@
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Rothberg/cfd2.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Boeing/pwtk.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_AFE/af_0_k101.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Boeing/pwtk.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_ISEI/ohne2.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/PARSEC/Si41Ge41H72.tar.gz
+
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Bourchtein/atmosmodj.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/FEMLAB/sme3Db.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Norris/torso3.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_AFE/af_shell9.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/vanHeukelum/cage13.tar.gz
+ wget https://suitesparse-collection-website.herokuapp.com/MM/Schenk_ISEI/para-10.tar.gz
